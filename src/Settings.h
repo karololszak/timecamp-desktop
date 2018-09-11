@@ -9,11 +9,11 @@
 #define APPLICATION_VERSION "2.0.0.0"
 
 #define WINDOW_NAME "TimeCamp"
-#define MARKETING_URL "https://www.timecamp.com/"
-#define LOGIN_URL "https://www.timecamp.com/auth/login"
-#define API_URL "https://www.timecamp.com/third_party/api"
-#define APPLICATION_URL "https://www.timecamp.com/app#/timesheets/timer"
-#define OFFLINE_URL "https://www.timecamp.com/helper/setdate/today/offline"
+#define MARKETING_URL "http://localhost:8080/"
+#define LOGIN_URL "http://localhost:8080/auth/login"
+#define API_URL "http://localhost:8080/third_party/api"
+#define APPLICATION_URL "http://localhost:8080/app#/timesheets/timer"
+#define OFFLINE_URL "http://localhost:8080/helper/setdate/today/offline"
 #define CONTACT_SUPPORT_URL "https://www.timecamp.com/kb/contact/?utm_source=timecamp_desktop"
 
 #define CONTACT_EMAIL "desktopapp@timecamp.com"
