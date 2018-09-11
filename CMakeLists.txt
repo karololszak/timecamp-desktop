@@ -63,6 +63,10 @@ endforeach ()
 
 ADD_DEFINITIONS(-DUNICODE -D_UNICODE -DPSAPI_VERSION=1 -DQHOTKEY_LIB -DQHOTKEY_LIB_BUILD -DQT_USE_QSTRINGBUILDER)
 
+if ("${CMAKE_CXX_COMPILER}" MATCHES "clang")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-limit-debug-info")
+endif()
+
 list(APPEND SOURCE_FILES
         "src/Settings.h" # a header without cpp file
         "src/main.cpp"
@@ -71,14 +75,19 @@ list(APPEND SOURCE_FILES
         "src/Overrides/TCRequestInterceptor.cpp"
         "src/Overrides/TCNavigationInterceptor.cpp"
         "src/Overrides/TCWebEngineView.cpp"
+        "src/Overrides/ClickableLabel.cpp"
         "src/Comms.cpp"
         "src/AppData.cpp"
+        "src/Task.cpp"
+        "src/AutoTracking.cpp"
         "src/Autorun.cpp"
         "src/WindowEventsManager.cpp"
         "src/TrayManager.cpp"
         "third-party/mozilla_lz4/lz4.c"
+        "third-party/QTLogRotation/logutils.cpp"
         "src/DataCollector/WindowEvents.cpp"
         "src/Widget/Widget.cpp"
+        "src/Widget/FloatingWidget.cpp"
         )
 
 
@@ -99,6 +108,7 @@ if (WIN32)
             "user32.lib"
             "comsuppw.lib"
             )
+    set(Qt5_OS_LIBRARIES Qt5::WinExtras)
 endif ()
 
 if (UNIX AND NOT APPLE)
@@ -111,6 +121,7 @@ if (UNIX AND NOT APPLE)
     list(APPEND TC_LIBS
             "-lX11 -lXss"
             )
+    set(Qt5_OS_LIBRARIES Qt5::X11Extras)
 endif ()
 
 if (APPLE)
@@ -124,9 +135,7 @@ if (APPLE)
             )
     set_source_files_properties(src/*.mm PROPERTIES COMPILE_FLAGS "-x objective-c++")
 
-    list(APPEND TC_LIBS
-            Qt5::MacExtras
-            )
+    set(Qt5_OS_LIBRARIES Qt5::MacExtras)
 endif ()
 
 # QHotkey
@@ -183,16 +192,5 @@ if (WIN32)
     #    set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
 endif ()
 
-target_link_libraries(${PROJECT_NAME} ${TC_LIBS} ${Qt5Core_QTMAIN_LIBRARIES})
-
-if (UNIX AND NOT APPLE)
-    qt5_use_modules(${PROJECT_NAME} Core Gui Network Widgets WebEngineWidgets Sql X11Extras)
-    message("X11 extras used")
-elseif (APPLE)
-    qt5_use_modules(${PROJECT_NAME} Core Gui Network Widgets WebEngineWidgets Sql macextras)
-    message("Mac extras used")
-elseif (WIN32)
-    qt5_use_modules(${PROJECT_NAME} Core Gui Network Widgets WebEngineWidgets Sql winextras)
-else ()
-    qt5_use_modules(${PROJECT_NAME} Core Gui Network Widgets WebEngineWidgets Sql)
-endif ()
+set(Qt5_LIBRARIES Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets Qt5::WebEngineWidgets Qt5::Sql)
+target_link_libraries(${PROJECT_NAME} ${TC_LIBS} ${Qt5_LIBRARIES} ${Qt5_OS_LIBRARIES})

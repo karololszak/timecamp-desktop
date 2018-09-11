@@ -17,6 +17,10 @@
 #define _WIDGET_EXISTS_
 
 #else
+
+#include "Widget/FloatingWidget.h"
+#define _WIDGET_EXISTS_
+
 #endif
 
 class MainWidget;
@@ -29,7 +33,6 @@ Q_OBJECT
 public:
 
     static TrayManager &instance();
-    explicit TrayManager(QObject *parent = nullptr);
     virtual ~TrayManager() {}
 
     void setupTray(MainWidget *);
@@ -40,16 +43,18 @@ public:
     void loginLogout(bool, QString);
 
     bool wasLoggedIn = false;
+    QMenu *getTrayMenu() const;
 
 signals:
     void pcActivitiesValueChanged(bool);
-    void taskSelected(int);
+    void taskSelected(int, bool);
 
 public slots:
     void iconActivated(QSystemTrayIcon::ActivationReason);
     void menuActionHandler(QAction *action);
     void autoStart(bool checked);
     void tracker(bool checked);
+    void autoTracking(bool checked);
     void updateRecentTasks();
     void openCloseWindowAction();
     void contactSupport();
@@ -57,6 +62,8 @@ public slots:
     void widgetToggl(bool checked);
 #endif
 
+protected:
+    explicit TrayManager(QObject *parent = nullptr);
 
 private:
     QSystemTrayIcon *trayIcon;
@@ -66,9 +73,11 @@ private:
     void createActions(QMenu *);
     void assignActions(QMenu *);
     QAction *openAct;
+    QAction *recentTasksTitleAct;
     QAction *startTaskAct;
     QAction *stopTaskAct;
     QAction *trackerAct;
+    QAction *autoTrackingAct;
     QAction *autoStartAct;
     QAction *widgetAct;
     QAction *helpAct;
@@ -78,7 +87,11 @@ private:
 
 #ifdef _WIDGET_EXISTS_
     Widget *widget;
+public:
+    void setWidget(Widget *widget);
 #endif
+
+    bool areMenusEqual(QMenu *menu1, QMenu *menu2);
 };
 
 

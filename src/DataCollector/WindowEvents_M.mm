@@ -9,6 +9,8 @@
 
 #include "src/FirefoxUtils.h"
 
+//#import <Foundation/Foundation.h>
+
 // mixed Objective-C and C++ kudos to:
 // https://stackoverflow.com/questions/9080619/nsworkspace-notifications-in-cfnotificationcenter
 
@@ -78,17 +80,44 @@ void WindowEvents_M::run()
 //    timer->stop();
 
 
-    this->workspaceWatcher = [[MDWorkspaceWatcher alloc] initWithMyClass:this];
+//    this->workspaceWatcher = [[MDWorkspaceWatcher alloc] initWithMyClass:this];
+    this->initAppleScript();
     while (!QThread::currentThread()->isInterruptionRequested()) {
         // empty loop, waiting for stopping the thread
         if (!isIdle) {
             this->GetActiveApp();
         }
-        QThread::msleep(2 * 1000); // 2 seconds sleep, like in old app
+        QThread::msleep(1024); // ~1.5 seconds sleep but pow of 2, almost like in old app
     }
-    [(MDWorkspaceWatcher *) this->workspaceWatcher release];
+
+//    [(MDWorkspaceWatcher *) this->workspaceWatcher release];
+    [(NSAppleScript *) getWindowScriptObj release];
 
     qInfo("thread stopped");
+}
+
+void WindowEvents_M::initAppleScript()
+{
+    getWindowScriptObj = [[NSAppleScript alloc] initWithSource:@"global frontApp, frontAppName, windowTitle, fileURL \n \
+                                   set windowTitle to \"\" \n \
+                                   set fileURL to \"\" \n \
+                                   tell application \"System Events\" \n \
+                                       set frontApp to first application process whose frontmost is true \n \
+                                       set frontAppName to name of frontApp \n \
+                                       tell process frontAppName \n \
+                                           if exists (1st window whose value of attribute \"AXMain\" is true) then \n \
+                                               tell (1st window whose value of attribute \"AXMain\" is true) \n \
+                                                   if exists (attribute \"AXDocument\") then \n \
+                                                       set fileURL to value of attribute \"AXDocument\" \n \
+                                                   end if \n \
+                                                   if exists (attribute \"AXTitle\") then \n \
+                                                       set windowTitle to value of attribute \"AXTitle\" \n \
+                                                   end if \n \
+                                               end tell \n \
+                                           end if \n \
+                                       end tell \n \
+                                   end tell \n \
+                                   return {frontAppName, windowTitle}"]; //return {frontApp, frontAppName, windowTitle}"];
 }
 
 void WindowEvents_M::GetActiveApp(QString processName)
@@ -138,49 +167,33 @@ void WindowEvents_M::GetActiveApp(QString processName)
     //Get Window Name or
     appTitle = GetProcWindowName(processName);
 
-    //Get URL from browsers
-//    processName = processName.toLower();
-    additionalInfo = GetAdditionalInfo(processName.toLower());
-//    qDebug() << "additional info: " << additionalInfo;
+    AppData *app;
 
-    WindowEvents::logAppName(processName, appTitle, additionalInfo);
+    app = WindowEvents::logAppName(processName, appTitle, additionalInfo);
+    additionalInfo = GetAdditionalInfo(processName.toLower());
+
+    if(additionalInfo != "") {
+        app->setAdditionalInfo(additionalInfo); // after we get the URL, update additionalInfo
+    }
 }
 
 QString WindowEvents_M::GetProcWindowName(QString processName)
 {
-    QString appTitle;
+    QString appTitle("");
+
+    if(getWindowScriptObj == nil){
+        return appTitle;
+    }
     @autoreleasepool {
         NSString *windowName = @"";
         NSDictionary *errorDict;
         NSAppleEventDescriptor *returnDescriptor = nil;
 
-        NSAppleScript *scriptObject = [[NSAppleScript alloc] initWithSource:@"global frontApp, frontAppName, windowTitle, fileURL \n \
-                                   set windowTitle to \"\" \n \
-                                   set fileURL to \"\" \n \
-                                   tell application \"System Events\" \n \
-                                       set frontApp to first application process whose frontmost is true \n \
-                                       set frontAppName to name of frontApp \n \
-                                       tell process frontAppName \n \
-                                           if exists (1st window whose value of attribute \"AXMain\" is true) then \n \
-                                               tell (1st window whose value of attribute \"AXMain\" is true) \n \
-                                                   if exists (attribute \"AXDocument\") then \n \
-                                                       set fileURL to value of attribute \"AXDocument\" \n \
-                                                   end if \n \
-                                                   if exists (attribute \"AXTitle\") then \n \
-                                                       set windowTitle to value of attribute \"AXTitle\" \n \
-                                                   end if \n \
-                                               end tell \n \
-                                           end if \n \
-                                       end tell \n \
-                                   end tell \n \
-                                   return {frontAppName, windowTitle}"]; //return {frontApp, frontAppName, windowTitle}"];
-
         // Run the AppleScript.
-        returnDescriptor = [scriptObject executeAndReturnError:&errorDict];
+        returnDescriptor = [(NSAppleScript*) getWindowScriptObj executeAndReturnError:&errorDict];
 //    NSLog(@"DESCRIPTOR %@", returnDescriptor);
 //    NSLog(@"ERROR %@", errorDict); // warning, THROWS ERRORS! breaks app!!!
 
-        [scriptObject release];
         NSInteger howMany = [returnDescriptor numberOfItems];
 
         if ([returnDescriptor descriptorType] != 0u) {
@@ -194,6 +207,7 @@ QString WindowEvents_M::GetProcWindowName(QString processName)
     return appTitle;
 }
 
+/*
 QString WindowEvents_M::GetProcNameFromPath(QString processName)
 {
     @autoreleasepool {
@@ -202,7 +216,7 @@ QString WindowEvents_M::GetProcNameFromPath(QString processName)
         NSDictionary *errorDict;
         NSAppleEventDescriptor *returnDescriptor = nil;
         // WORKING SCRIPT!
-        NSAppleScript *scriptObject = [[NSAppleScript alloc] initWithSource:@"tell application \"System Events\" \n \
+        NSAppleScript *getWindowScriptObj = [[NSAppleScript alloc] initWithSource:@"tell application \"System Events\" \n \
                                    set name_ to name of (info for (path to frontmost application)) as string \n \
                                    end tell \n \
                                    RemoveFromString(name_, \".app\") \n \
@@ -224,9 +238,9 @@ QString WindowEvents_M::GetProcNameFromPath(QString processName)
                                    end try \n \
                                    end RemoveFromString"];
         // Run the AppleScript.
-        returnDescriptor = [scriptObject executeAndReturnError:&errorDict];
+        returnDescriptor = [getWindowScriptObj executeAndReturnError:&errorDict];
         //NSLog(@"DESCRIPTOR %@", returnDescriptor);
-        [scriptObject release];
+        [getWindowScriptObj release];
 
         if ([returnDescriptor descriptorType] != 0u) {
             //NSLog(@"Script executed sucessfully.");
@@ -245,10 +259,11 @@ QString WindowEvents_M::GetProcNameFromPath(QString processName)
     }
     return processName;
 }
+*/
 
 QString WindowEvents_M::GetAdditionalInfo(QString processName)
 {
-    QString additionalInfo;
+    QString additionalInfo("");
     @autoreleasepool {
 
         bool executed = false;
@@ -275,7 +290,7 @@ QString WindowEvents_M::GetAdditionalInfo(QString processName)
              */
             NSString *pom = pom2.toNSString();
 
-            /*scriptObject = [[NSAppleScript alloc] initWithSource:
+            /*getWindowScriptObj = [[NSAppleScript alloc] initWithSource:
                             @"tell application \"Google Chrome\" \n \
                             get URL of active tab of first window \n \
                             end tell"];*/

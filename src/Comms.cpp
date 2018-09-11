@@ -36,9 +36,9 @@ void Comms::timedUpdates()
 
     setCurrentTime(QDateTime::currentMSecsSinceEpoch()); // time of DB fetch is passed, so we can update to it if successful
 
-    QVector<AppData *> appList;
+    QVector<AppData> appList;
     try {
-        appList = DbManager::instance().getAppsSinceLastSync(lastSync); // get apps since last sync
+        appList = DbManager::instance().getAppsSinceLastSync(lastSync); // get apps since last sync; SQL queries for LIMIT = MAX_ACTIVITIES_BATCH_SIZE
     } catch (...) {
         qInfo("[AppList] DB fail");
         return;
@@ -46,7 +46,7 @@ void Comms::timedUpdates()
 
     qDebug() << "[AppList] length: " << appList.length();
     // send only if there is anything to send (0 is if "computer activities" are disabled, 1 is sometimes only with "IDLE" - don't send that)
-    if (appList.length() > 1 || (appList.length() == 1 && appList.first()->getAppName() != "IDLE")) {
+    if (appList.length() > 1 || (appList.length() == 1 && appList.first().getAppName() != "IDLE")) {
         sendAppData(&appList);
         if(appList.length() >= MAX_ACTIVITIES_BATCH_SIZE){
             qInfo() << "[AppList] was big";
@@ -58,6 +58,12 @@ void Comms::timedUpdates()
     }
     getUserInfo();
     getSettings();
+    getTasks();
+}
+
+void Comms::clearLastApp()
+{
+    lastApp = nullptr;
 }
 
 void Comms::saveApp(AppData *app)
@@ -86,40 +92,61 @@ void Comms::saveApp(AppData *app)
 
     if (needsReporting) {
         qint64 now = QDateTime::currentMSecsSinceEpoch();
-        lastApp->setEnd(now); // it already has start, now we only update end
+        lastApp->setEnd(now - 1); // it already has start, now we only update end
 
-        try {
-            DbManager::instance().saveAppToDb(lastApp);
-        } catch (...) {
-            qInfo("[DBSAVE] DB fail");
-            return;
+        if(lastApp->getStart() < lastApp->getEnd()) {
+            if((lastApp->getEnd() - lastApp->getStart()) > 1000) { // if activity is longer than 1sec
+                try {
+                    emit DbSaveApp(lastApp);
+                } catch (...) {
+                    qInfo("[DBSAVE] DB fail");
+                    return;
+                }
+
+                qInfo("[DBSAVE] %llds - %s | %s\nADD_INFO: %s \n",
+                       (lastApp->getEnd() - lastApp->getStart()) / 1000,
+                       lastApp->getAppName().toLatin1().constData(),
+                       lastApp->getWindowName().toLatin1().constData(),
+                       lastApp->getAdditionalInfo().toLatin1().constData()
+                );
+
+                app->setStart(now); // saved OK, so new App starts "NOW"
+            } else {
+                qWarning("[DBSAVE] Activity too short (%lldms) - %s",
+                      lastApp->getEnd() - lastApp->getStart(),
+                      lastApp->getAppName().toLatin1().constData()
+                );
+
+                app->setStart(lastApp->getStart()); // not saved, so new App starts when the old one has started
+            }
+        } else {
+            qInfo("[DBSAVE] Activity (%s) broken: from %lld, to %lld",
+                  lastApp->getAppName().toLatin1().constData(),
+                  lastApp->getStart(),
+                  lastApp->getEnd()
+            );
+
+            app->setStart(lastApp->getStart()); // not saved, so new App starts when the old one has started
         }
 
-        app->setStart(now);
-        qDebug("[DBSAVE] %lds - %s | %s\nADD_INFO: %s \n",
-               (lastApp->getEnd() - lastApp->getStart())/1000,
-               lastApp->getAppName().toLatin1().constData(),
-               lastApp->getWindowName().toLatin1().constData(),
-               lastApp->getAdditionalInfo().toLatin1().constData());
         lastApp = app; // update app reference
     }
 }
 
-bool Comms::isApiKeyOK()
+bool Comms::updateApiKeyFromSettings()
 {
-    if (apiKey.isEmpty()) {
+    apiKey = settings.value(SETT_APIKEY).toString().trimmed();
+
+    if (apiKey.isEmpty() || apiKey == "false") {
         qInfo() << "[EMPTY API KEY !!!]";
         return false;
     }
     return true;
 }
 
-void Comms::sendAppData(QVector<AppData *> *appList)
+void Comms::sendAppData(QVector<AppData> *appList)
 {
-    // read api key from settings
-    apiKey = settings.value(SETT_APIKEY).toString();
-
-    if (!isApiKeyOK()) {
+    if (!updateApiKeyFromSettings()) {
         return;
     }
 
@@ -132,7 +159,7 @@ void Comms::sendAppData(QVector<AppData *> *appList)
 
     int count = 0;
 
-    for (AppData *app: *appList) {
+    for (AppData app: *appList) {
 //    qDebug() << "[NOTIFY OF APP]";
 //    qDebug() << "getAppName: " << app->getAppName();
 //    qDebug() << "getWindowName: " << app->getWindowName();
@@ -141,21 +168,21 @@ void Comms::sendAppData(QVector<AppData *> *appList)
 //    qDebug() << "getStart: " << app->getStart();
 //    qDebug() << "getEnd: " << app->getEnd();
 
-        if (app->getAppName() != "IDLE" && app->getWindowName() != "IDLE") {
+        if (app.getAppName() != "IDLE" && app.getWindowName() != "IDLE") {
             QString base_str = QString("computer_activities") + QString("[") + QString::number(count) + QString("]");
 
             if (canSendActivityInfo) {
-                QString tempAppName = app->getAppName();
+                QString tempAppName = app.getAppName();
                 if(tempAppName == ""){
                     tempAppName = "explorer2";
                 }
                 params.addQueryItem(base_str + QString("[application_name]"), tempAppName);
                 if (canSendWindowTitles) {
-                    params.addQueryItem(base_str + QString("[window_title]"), app->getWindowName());
+                    params.addQueryItem(base_str + QString("[window_title]"), app.getWindowName());
 
                     // "Web Browser App" when appName is Internet but no domain
-                    if (app->getAdditionalInfo() != "") {
-                        params.addQueryItem(base_str + QString("[website_domain]"), app->getDomainFromAdditionalInfo());
+                    if (app.getAdditionalInfo() != "") {
+                        params.addQueryItem(base_str + QString("[website_domain]"), app.getDomainFromAdditionalInfo());
                     }
                 } else {
                     params.addQueryItem(base_str + QString("[window_title]"), "");
@@ -165,16 +192,16 @@ void Comms::sendAppData(QVector<AppData *> *appList)
                 params.addQueryItem(base_str + QString("[window_title]"), "");
             }
 
-            QString start_time = QDateTime::fromMSecsSinceEpoch(app->getStart()).toString(Qt::ISODate).replace("T", " ");
+            QString start_time = QDateTime::fromMSecsSinceEpoch(app.getStart()).toString(Qt::ISODate).replace("T", " ");
             params.addQueryItem(base_str + QString("[start_time]"), start_time);
 //            qDebug() << "converted start_time: " << start_time;
 
-            QString end_time = QDateTime::fromMSecsSinceEpoch(app->getEnd()).toString(Qt::ISODate).replace("T", " ");
+            QString end_time = QDateTime::fromMSecsSinceEpoch(app.getEnd()).toString(Qt::ISODate).replace("T", " ");
             params.addQueryItem(base_str + QString("[end_time]"), end_time);
 //            qDebug() << "converted end_time: " << end_time;
             count++;
         }
-        lastSync = app->getEnd(); // set our internal variable to value from last app
+        lastSync = app.getEnd(); // set our internal variable to value from last app
     }
 
 //    qDebug() << "--------------";
@@ -206,8 +233,8 @@ void Comms::appDataReply(QNetworkReply *reply)
 {
     QByteArray buffer = reply->readAll();
     if(reply->error() != QNetworkReply::NoError){
-        qInfo() << "Network error: " << reply->errorString();
-        qInfo() << "Data: " << buffer;
+        qWarning() << "Network error: " << reply->errorString();
+        qWarning() << "Data: " << buffer;
         return;
     }
 
@@ -244,10 +271,7 @@ void Comms::setCurrentTime(qint64 current_time)
 
 void Comms::getUserInfo()
 {
-    // read api key from settings
-    apiKey = settings.value(SETT_APIKEY).toString();
-
-    if (!isApiKeyOK()) {
+    if (!updateApiKeyFromSettings()) {
         return;
     }
 
@@ -266,7 +290,7 @@ void Comms::getUserInfo()
 void Comms::userInfoReply(QNetworkReply *reply)
 {
     if(reply->error() != QNetworkReply::NoError){
-        qInfo() << "Network error: " << reply->errorString();
+        qWarning() << "Network error: " << reply->errorString();
         return;
     }
 
@@ -292,10 +316,7 @@ void Comms::userInfoReply(QNetworkReply *reply)
 
 void Comms::getSettings()
 {
-    // read api key from settings
-    apiKey = settings.value(SETT_APIKEY).toString();
-
-    if (!isApiKeyOK()) {
+    if (!updateApiKeyFromSettings()) {
         return;
     }
 
@@ -357,7 +378,7 @@ void Comms::getSettings()
 void Comms::settingsReply(QNetworkReply *reply)
 {
     if(reply->error() != QNetworkReply::NoError){
-        qInfo() << "Network error: " << reply->errorString();
+        qWarning() << "Network error: " << reply->errorString();
         return;
     }
     QByteArray buffer = reply->readAll();
@@ -380,6 +401,52 @@ void Comms::settingsReply(QNetworkReply *reply)
             << settings.value(QString("SETT_WEB_") + QString("dontCollectComputerActivity")).toBool();
     qDebug() << "SETT collectWindowTitles: "
             << settings.value(QString("SETT_WEB_") + QString("collectWindowTitles")).toBool();
+}
+
+void Comms::getTasks()
+{
+    if (!updateApiKeyFromSettings()) {
+        return;
+    }
+
+    QUrl serviceURL("https://www.timecamp.com/third_party/api/tasks/api_token/" + apiKey + "/format/json");
+    QNetworkRequest request(serviceURL);
+    request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
+
+    // set up connection parameters
+    // identify as our app
+    request.setRawHeader("User-Agent", CONN_USER_AGENT);
+    request.setRawHeader(CONN_CUSTOM_HEADER_NAME, CONN_CUSTOM_HEADER_VALUE);
+
+    this->netRequest(request, QNetworkAccessManager::GetOperation, &Comms::tasksReply, "");
+}
+
+void Comms::tasksReply(QNetworkReply *reply)
+{
+    if(reply->error() != QNetworkReply::NoError){
+        qWarning() << "Network error: " << reply->errorString();
+        return;
+    }
+
+    QByteArray buffer = reply->readAll();
+    QJsonDocument itemDoc = QJsonDocument::fromJson(buffer);
+
+    buffer.truncate(MAX_LOG_TEXT_LENGTH);
+    qDebug() << "Tasks Response: " << buffer;
+
+    DbManager::instance().clearTaskList();
+
+    QJsonObject rootObject = itemDoc.object();
+    for (auto oneTaskJSON: rootObject) {
+        QJsonObject oneTask = oneTaskJSON.toObject();
+        qint64 task_id = oneTaskJSON.toObject().value("task_id").toString().toLongLong();
+        QString name = oneTaskJSON.toObject().value("name").toString();
+        QString tags = oneTaskJSON.toObject().value("tags").toString();
+        Task* impTask = new Task(task_id);
+        impTask->setName(name);
+        impTask->setKeywords(tags);
+        DbManager::instance().addToTaskList(impTask);
+    }
 }
 
 void Comms::netRequest(QNetworkRequest request, QNetworkAccessManager::Operation netOp, ReplyHandler callback, QByteArray data)

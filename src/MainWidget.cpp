@@ -9,7 +9,8 @@
 #include "WindowEventsManager.h"
 
 
-MainWidget::MainWidget(QWidget *parent) : QWidget(parent), ui(new Ui::MainWidget)
+MainWidget::MainWidget(QWidget *parent)
+    : QWidget(parent), ui(new Ui::MainWidget)
 {
     ui->setupUi(this);
 
@@ -24,7 +25,6 @@ MainWidget::MainWidget(QWidget *parent) : QWidget(parent), ui(new Ui::MainWidget
 
     // set some defaults
     loggedIn = false;
-    timerName = "";
 
     this->setMinimumSize(QSize(350, 500));
 //
@@ -78,7 +78,7 @@ void MainWidget::moveEvent(QMoveEvent *event)
 
 void MainWidget::changeEvent(QEvent *event)
 {
-    if(event->type() == QEvent::WindowStateChange){
+    if (event->type() == QEvent::WindowStateChange) {
         this->handleSpacingEvents();
     }
     QWidget::changeEvent(event);
@@ -106,7 +106,8 @@ void MainWidget::twoSecTimerTimeout()
         emit checkIsIdle();
         checkIsTimerRunning();
         fetchRecentTasks();
-        if (settings.value(SETT_APIKEY).toString().isEmpty()) {
+        QString apiKeyStr = settings.value(SETT_APIKEY).toString().trimmed();
+        if (apiKeyStr.isEmpty() || apiKeyStr == "false") {
             fetchAPIkey();
         }
     } else {
@@ -192,9 +193,16 @@ void MainWidget::webpageTitleChanged(QString title)
 //    qInfo("[NEW_TC]: Webpage title changed: ");
 //    qInfo(title.toLatin1().constData());
     checkIfLoggedIn(title);
+    if (!loggedIn) {
+        this->runJSinPage("jQuery('#about .news').parent().parent().attr('class', 'hidden').siblings().first().attr('class', 'col-xs-12 col-sm-10 col-sm-push-1 col-md-8 col-md-push-2 col-lg-6 col-lg-push-3')");
+        LastTasks.clear(); // clear last tasks
+        LastTasksCache = QJsonDocument(); // clear the cache
+        emit lastTasksChanged();
+    }
     emit pageStatusChanged(loggedIn, title);
     this->setWindowTitle(title); // https://trello.com/c/J8dCKeV2/43-niech-tytul-apki-desktopowej-sie-zmienia-
     this->setAttribute(Qt::WA_TranslucentBackground);
+    this->checkIsTimerRunning();
 }
 
 void MainWidget::clearCache()
@@ -205,7 +213,6 @@ void MainWidget::clearCache()
     QTWEProfile->clearHttpCache();
     this->setUpdatesEnabled(true);
 }
-
 
 void MainWidget::webviewRefresh()
 {
@@ -225,7 +232,7 @@ void MainWidget::webviewFullscreen()
 
 void MainWidget::checkIfLoggedIn(QString title)
 {
-    if (!title.toLower().contains(QRegExp("log in|login|register|create free account|create account|time tracking software"))) {
+    if (!title.toLower().contains(QRegExp("log in|login|register|create free account|create account|time tracking software|blog"))) {
         loggedIn = true;
     } else {
         loggedIn = false; // when we log out, we need to set this variable again
@@ -249,6 +256,7 @@ void MainWidget::open()
 
 void MainWidget::runJSinPage(QString js)
 {
+    qDebug() << "Running JS: " << js;
     QTWEPage->runJavaScript(js);
 }
 
@@ -278,10 +286,15 @@ void MainWidget::goToTimerPage()
                 loop.quit();
             }
         });
+        QMetaObject::Connection conn3 = QObject::connect(QTWEPage, &QWebEnginePage::iconUrlChanged, [&]()
+        {
+            this->webpageTitleChanged(QTWEPage->title());
+        });
         QTWEPage->load(QUrl(APPLICATION_URL));
         loop.exec();
         QObject::disconnect(conn1);
         QObject::disconnect(conn2);
+        QObject::disconnect(conn3);
         QThread::msleep(128);
 
         this->webpageTitleChanged(QTWEPage->title());
@@ -331,30 +344,47 @@ void MainWidget::stopTask()
     this->runJSinPage("if($('.btn-timer').text().trim().toLowerCase() == 'stop timer') { $('.btn-timer').click(); }");
 }
 
-
-void MainWidget::startTaskByID(int taskID)
+void MainWidget::startTaskByID(qint64 taskID)
 {
     this->goToTimerPage();
     this->stopTask();
     QThread::msleep(128);
     this->runJSinPage("$('#timer-task-picker').click();");
-    this->runJSinPage("$(\".widgetSelectTask[data-task-id='"+ QString::number(taskID) +"'\")[0].click()");
+    QThread::msleep(128);
+    qDebug() << "Clicking task with id: " << taskID;
+    qDebug() << "Turned into string: " << QString::number(taskID);
+    this->runJSinPage("$(\".widgetSelectTask[data-task-id='" + QString::number(taskID) + "'\")[0].click()");
     QThread::msleep(128);
     this->pressStartTimerButton();
 }
 
+void MainWidget::startTaskByTaskObj(Task *task, bool force)
+{
+    QTWEPage->runJavaScript(
+        "typeof(angular) !== 'undefined' && angular.element(document.body).injector().get('TimerService').timer.task_id",
+        [this, task, force](const QVariant &v) {
+            QString timerId = v.toString();
+            if (force || timerId.isEmpty() || timerId.toInt() != task->getTaskId()) {
+                emit startTaskViaObjToID(task->getTaskId());
+            }
+        });
+}
+
 void MainWidget::refreshTimerPageData()
 {
-    if(this->checkIfOnTimerPage()) {
-        this->runJSinPage("$('.btn .fa-repeat').parent().click();");
+    if (this->checkIfOnTimerPage()) {
+        this->runJSinPage("if(typeof(TC['lastReload']) === 'undefined'){TC['lastReload'] = +Date.now() - 30*1000 - 1;}"
+                          "if(TC['lastReload'] < Date.now() - 30*1000){"
+                          "$('.btn .fa-repeat').parent().click();"
+                          "TC['lastReload'] = +Date.now();"
+                          "}");
     }
 }
 
-
 void MainWidget::checkIsTimerRunning()
 {
-    QTWEPage->runJavaScript("angular.element(document.body).injector().get('TimerService').timer.isTimerRunning", [this](
-            const QVariant &v)
+    QTWEPage->runJavaScript("typeof(angular) !== 'undefined' && angular.element(document.body).injector().get('TimerService').timer.isTimerRunning", [this](
+        const QVariant &v)
     {
 //        qDebug() << "Timer running: " << v.toString();
         setIsTimerRunning(v.toBool());
@@ -363,21 +393,21 @@ void MainWidget::checkIsTimerRunning()
 
 void MainWidget::fetchRecentTasks()
 {
-    QTWEPage->runJavaScript("JSON.stringify(TC.TimeTracking.Lasts)", [this](const QVariant &v)
+    QTWEPage->runJavaScript("typeof(TC) !== 'undefined' && JSON.stringify(TC.TimeTracking.Lasts)", [this](const QVariant &v)
     {
 //        LastTasks.clear(); // don't need to clear a QHash
 
 //        qDebug() << v.toString();
         QJsonDocument itemDoc = QJsonDocument::fromJson(v.toByteArray());
-        if(itemDoc != LastTasksCache) {
+        if (itemDoc != LastTasksCache) {
             QJsonArray rootArray = itemDoc.array();
             for (QJsonValueRef val: rootArray) {
                 QJsonObject obj = val.toObject();
 //            qDebug() << obj.value("task_id").toString().toInt() << ": " << obj.value("name").toString();
                 LastTasks.insert(obj.value("name").toString(), obj.value("task_id").toString().toInt());
             }
-            emit lastTasksChanged();
             LastTasksCache = itemDoc;
+            emit lastTasksChanged();
         }
     });
 }
@@ -385,7 +415,7 @@ void MainWidget::fetchRecentTasks()
 void MainWidget::fetchAPIkey()
 {
 //    QTWEPage->runJavaScript("await window.apiService.getToken()",
-    QTWEPage->runJavaScript("window.apiService.getToken().$$state.value", [this](const QVariant &v)
+    QTWEPage->runJavaScript("typeof(window.apiService) !== 'undefined' && window.apiService.getToken().$$state.value", [this](const QVariant &v)
     {
 //        qDebug() << "API Key: " << v.toString();
         setApiKey(v.toString());
@@ -415,11 +445,7 @@ void MainWidget::setApiKey(const QString &apiKey)
 
 void MainWidget::setTimerName(const QString &timerName)
 {
-    QFont x = QFont();
-    QFontMetrics metrix(x);
-    int width = 100; // pixels
-    MainWidget::timerName = metrix.elidedText(timerName, Qt::ElideRight, width);
-    emit timerStatusChanged(true, MainWidget::timerName); // reenable task stopping
+    emit timerStatusChanged(true, timerName); // reenable task stopping
 }
 
 void MainWidget::setIsTimerRunning(bool isTimerRunning)
@@ -427,6 +453,6 @@ void MainWidget::setIsTimerRunning(bool isTimerRunning)
     if (isTimerRunning) {
         fetchTimerName(); // this will make menu say "Stop XYZ timer"
     } else { // no timer running
-        emit timerStatusChanged(false, "timer"); // disable the option - gray it out;  make the option say "Stop timer"
+        emit timerStatusChanged(false, ""); // disable the option - gray it out;
     }
 }

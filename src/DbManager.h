@@ -5,17 +5,17 @@
 #include <QSqlDatabase>
 #include <QVector>
 #include <QSqlQuery>
+#include <QtCore/QHash>
 
 #include "AppData.h"
+#include "Task.h"
 
-class DbManager : QObject
-{
+class DbManager : public QObject {
 Q_OBJECT
     Q_DISABLE_COPY(DbManager)
 
 public:
     static DbManager &instance();
-    explicit DbManager(QObject *parent = nullptr);
     ~DbManager() override;
 
     bool isOpen() const;
@@ -28,15 +28,26 @@ public:
      */
     bool createTable();
 
+    QVector<AppData> getAppsSinceLastSync(qint64 last_sync);
+
+    QHash<qint64, Task*> taskList;
+
+    const QHash<qint64, Task *> &getTaskList() const;
+
+    void addToTaskList(Task*);
+    void clearTaskList();
+
+public slots:
+
     /**
      * @brief Add data to db
      * @return true - person added successfully, false - person not added
      */
     bool saveAppToDb(AppData *app);
 
-    QVector<AppData *> getAppsSinceLastSync(qint64 last_sync);
-
 protected:
+    explicit DbManager(QObject *parent = nullptr);
+
     QSqlDatabase m_db;
     QSqlQuery addAppQuery;
     QSqlQuery getAppsQuery;

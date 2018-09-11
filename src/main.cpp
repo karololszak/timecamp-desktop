@@ -1,7 +1,3 @@
-#include <ctime>
-#include <iomanip>
-#include <iostream>
-
 #include <QApplication>
 #include <QTimer>
 #include <QStandardPaths>
@@ -18,12 +14,14 @@
 #include "MainWidget.h"
 #include "Comms.h"
 #include "DbManager.h"
+#include "AutoTracking.h"
 #include "TrayManager.h"
 #include "DataCollector/WindowEvents.h"
 #include "WindowEventsManager.h"
+#include "Widget/FloatingWidget.h"
 
 #include "third-party/vendor/de/skycoder42/qhotkey/QHotkey/qhotkey.h"
-
+#include "third-party/QTLogRotation/logutils.h"
 
 void firstRun()
 {
@@ -38,53 +36,8 @@ void firstRun()
     settings.setValue(SETT_IS_FIRST_RUN, false);
 }
 
-void myMessageHandler(QtMsgType type, const QMessageLogContext &, const QString &msg)
-{
-    const std::time_t stdtime = std::time(nullptr);
-//    std::cout << "UTC:       " << std::put_time(std::gmtime(&stdtime), "%H:%M:%S") << '\n';
-//    std::cout << "local:     " << std::put_time(std::localtime(&stdtime), "%H:%M:%S") << '\n';
-    char timestring[100];
-
-#ifdef Q_OS_WIN
-    struct tm buf;
-    gmtime_s(&buf, &stdtime);
-    std::strftime(timestring, sizeof(timestring), "%H:%M:%S", &buf);
-#else
-    std::strftime(timestring, sizeof(timestring), "%H:%M:%S", std::gmtime(&stdtime)); // UTC, localtime for local
-#endif
-
-    QString txt;
-    txt += "[";
-    txt += timestring;
-    txt += "] ";
-    switch (type) {
-        case QtDebugMsg:
-            txt += QString("Debug:\t%1").arg(msg);
-            break;
-        case QtInfoMsg:
-            txt += QString("Info:\t%1").arg(msg);
-            break;
-        case QtWarningMsg:
-            txt += QString("Warning:\t%1").arg(msg);
-            break;
-        case QtCriticalMsg:
-            txt += QString("Critical:\t%1").arg(msg);
-            break;
-        case QtFatalMsg:
-            txt += QString("Fatal:\t%1").arg(msg);
-            break;
-    }
-    QFile outFile(QStandardPaths::standardLocations(QStandardPaths::AppLocalDataLocation).first() + "/" + LOG_FILENAME);
-    outFile.open(QIODevice::WriteOnly | QIODevice::Append);
-    QTextStream ts(&outFile);
-    ts << txt << endl;
-    std::cout << txt.toStdString() << std::endl;
-}
-
 int main(int argc, char *argv[])
 {
-    // install log handler
-    qInstallMessageHandler(myMessageHandler);
 
     // Caches are saved in %localappdata%/org_name/APPLICATION_NAME
     // Eg. C:\Users\timecamp\AppData\Local\Time Solutions\TimeCamp Desktop
@@ -94,6 +47,9 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationDomain(ORGANIZATION_DOMAIN);
     QCoreApplication::setApplicationName(APPLICATION_NAME);
     QCoreApplication::setApplicationVersion(APPLICATION_VERSION);
+
+    // install log handler
+    LOGUTILS::initLogging();
 
     // Enable high dpi support
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
@@ -131,6 +87,9 @@ int main(int argc, char *argv[])
     appIcon.addFile(":/Icons/AppIcon_256.png");
     QApplication::setWindowIcon(appIcon);
 
+    // create DB Manager instance early, as it needs some time to prepare queries etc
+    DbManager *dbManager = &DbManager::instance();
+    AutoTracking *autoTracking = &AutoTracking::instance();
 
     // create events manager
     WindowEventsManager *windowEventsManager = &WindowEventsManager::instance();
@@ -140,7 +99,6 @@ int main(int argc, char *argv[])
     mainWidget.setWindowIcon(appIcon);
 
     // create tray manager
-//    auto *trayManager = new TrayManager();
     TrayManager *trayManager = &TrayManager::instance();
     QObject::connect(&mainWidget, &MainWidget::pageStatusChanged, trayManager, &TrayManager::loginLogout);
     QObject::connect(&mainWidget, &MainWidget::timerStatusChanged, trayManager, &TrayManager::updateStopMenu);
@@ -157,6 +115,15 @@ int main(int argc, char *argv[])
     // Away time bindings
     QObject::connect(windowEventsManager, &WindowEventsManager::updateAfterAwayTime, comms, &Comms::timedUpdates);
     QObject::connect(windowEventsManager, &WindowEventsManager::openAwayTimeManagement, &mainWidget, &MainWidget::goToAwayPage);
+
+    // Stopped logging bind
+    QObject::connect(windowEventsManager, &WindowEventsManager::dataCollectingStopped, comms, &Comms::clearLastApp);
+
+    // Save apps to sqlite on signal-slot basis
+    QObject::connect(comms, &Comms::DbSaveApp, dbManager, &DbManager::saveAppToDb);
+    QObject::connect(comms, &Comms::DbSaveApp, autoTracking, &AutoTracking::checkAppKeywords);
+    QObject::connect(autoTracking, &AutoTracking::foundTask, &mainWidget, &MainWidget::startTaskByTaskObj);
+    QObject::connect(&mainWidget, &MainWidget::startTaskViaObjToID, &mainWidget, &MainWidget::startTaskByID);
 
 
     // 2 sec timer for updating submenu and other features
@@ -176,11 +143,33 @@ int main(int argc, char *argv[])
     auto hotkeyOpenWindow = new QHotkey(QKeySequence(KB_SHORTCUTS_OPEN_WINDOW), true, &app);
     QObject::connect(hotkeyOpenWindow, &QHotkey::activated, trayManager, &TrayManager::openCloseWindowAction);
 
+    //
+    QObject::connect(&mainWidget, &MainWidget::pageStatusChanged, [&](bool loggedIn, QString title)
+    {
+        if (!loggedIn) {
+            if(syncDBtimer->isActive()) {
+                qInfo("Stopping DB Sync timer");
+                syncDBtimer->stop();
+            }
+        } else {
+            if(!syncDBtimer->isActive()) {
+                qInfo("Restarting DB Sync timer");
+                syncDBtimer->start();
+            }
+        }
+    });
+
     // everything connected via QObject, now heavy lifting
-    DbManager::instance();
     trayManager->setupTray(&mainWidget); // create tray
+    auto *theWidget = new FloatingWidget(); // FloatingWidget can't be bound to mainwidget (it won't set state=visible when main is hidden)
+    QObject::connect(&mainWidget, &MainWidget::timerStatusChanged, theWidget, &FloatingWidget::updateWidgetStatus);
+    QObject::connect(theWidget, &FloatingWidget::taskNameClicked, &mainWidget, &MainWidget::startTask);
+    QObject::connect(theWidget, &FloatingWidget::playButtonClicked, &mainWidget, &MainWidget::startTask);
+    QObject::connect(theWidget, &FloatingWidget::pauseButtonClicked, &mainWidget, &MainWidget::stopTask);
+    trayManager->setWidget(theWidget);
+    trayManager->setupSettings();
     mainWidget.init(); // init the WebView
-    Comms::instance().timedUpdates(); // fetch userInfo, userSettings, send apps since last update
+    comms->timedUpdates(); // fetch userInfo, userSettings, send apps since last update
 
     // now timers
     syncDBtimer->start(30 * 1000); // sync DB every 30s
