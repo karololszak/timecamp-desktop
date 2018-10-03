@@ -10,7 +10,8 @@
 class Widget_M : public Widget
 {
 public:
-    void setText(QString title) override;
+    void setTimerText(QString title) override;
+    void setTaskText(QString title) override;
     void setMenu(QMenu *menu) override;
     void setIcon(QString iconPath) override;
     void showMe() override;
