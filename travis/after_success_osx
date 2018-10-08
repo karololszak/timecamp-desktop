@@ -1,0 +1,8 @@
+#!/bin/sh -xe
+
+mv $SRC/"TimeCampDesktop.app" $TARGET/"TimeCamp Desktop.app"
+
+cd $TARGET
+
+# Run QT tool to deploy
+macdeployqt "${BUNDLE_NAME}"
