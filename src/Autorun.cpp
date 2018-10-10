@@ -6,14 +6,20 @@
 void Autorun::enableAutorun()
 {
 #ifdef Q_OS_LINUX
-    //
+    QString execPath = getenv("APPIMAGE");
+    if (execPath.isEmpty()) {
+        execPath = "/usr/share/Time Solutions/TimeCamp Desktop";
+    }
+
     QString desktopFile = ""
             "[Desktop Entry]\n"
             "Version=1.0\n"
             "Comment=\"TimeCamp Desktop 1.0\"\n"
             "Type=Application\n"
             "Name=TimeCamp Desktop\n"
-            "Exec=\"/usr/share/Time Solutions/TimeCamp Desktop\"\n"
+            "Exec=\""
+            + execPath +
+            "\"\n"
             "Icon=\"/usr/share/Time Solutions/icon.png\"\n"
             "StartupNotify=false\n"
             "Terminal=false\n"
