@@ -53,7 +53,7 @@ after_script:
 deploy:
   provider: releases
   api_key: $GITHUB_TOKEN
-  file: $TARGET/$DMG_NAME
+  file: $TARGET/$BUNDLE_NAME
   skip_cleanup: true
   on:
     condition: $TRAVIS_OS_NAME = osx
