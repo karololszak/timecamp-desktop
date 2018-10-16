@@ -53,7 +53,8 @@ after_script:
 deploy:
   provider: releases
   api_key: $GITHUB_TOKEN
-  file: $TARGET/"TimeCamp Desktop.dmg"
+  file: $TARGET/$DMG_NAME
   skip_cleanup: true
   on:
     condition: $TRAVIS_OS_NAME = osx
+    tags: true
