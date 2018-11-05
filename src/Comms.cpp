@@ -32,6 +32,8 @@ QUrlQuery Comms::getApiParams()
     QUrlQuery params;
     params.addQueryItem("api_token", apiKey);
     params.addQueryItem("service", SETT_API_SERVICE_FIELD);
+    params.addQueryItem("app_version", APPLICATION_VERSION);
+    params.addQueryItem("operating_system", QSysInfo::prettyProductName());
 
     return params;
 }
