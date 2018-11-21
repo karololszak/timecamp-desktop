@@ -1,9 +1,9 @@
 # Set project information
 set(PRODUCT_NAME "TimeCamp Desktop") # the nice visible name
 set(PRODUCT_VERSION 2.0.0.0)
-set(COMPANY "Time Solutions")
-set(IDENTIFIER "com.TimeSolutions.${PROJECT_NAME}")
-set(COPYRIGHT "Copyright (c) 2010-2018 Time Solutions. All rights reserved.")
+set(COMPANY "TimeCamp S.A.")
+set(IDENTIFIER "com.TimeCamp.${PROJECT_NAME}")
+set(COPYRIGHT "Copyright (c) 2010-2018 TimeCamp S.A. All rights reserved.")
 
 # Path to Qt precompiled libs:
 #set(CMAKE_PREFIX_PATH "~/Qt/5.10.1/gcc_64/")

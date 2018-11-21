@@ -2,7 +2,7 @@
 #ifndef THEGUI_SETTINGS_H
 #define THEGUI_SETTINGS_H
 
-#define ORGANIZATION_NAME "Time Solutions"
+#define ORGANIZATION_NAME "TimeCamp SA"
 #define ORGANIZATION_DOMAIN "TimeCamp.com"
 
 #define APPLICATION_NAME "TimeCamp Desktop"

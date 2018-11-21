@@ -41,8 +41,8 @@ int main(int argc, char *argv[])
 {
 
     // Caches are saved in %localappdata%/org_name/APPLICATION_NAME
-    // Eg. C:\Users\timecamp\AppData\Local\Time Solutions\TimeCamp Desktop
-    // Settings are saved in registry: HKEY_CURRENT_USER\Software\Time Solutions\TimeCamp Desktop
+    // Eg. C:\Users\timecamp\AppData\Local\TimeCamp SA\TimeCamp Desktop
+    // Settings are saved in registry: HKEY_CURRENT_USER\Software\TimeCamp SA\TimeCamp Desktop
 
     QCoreApplication::setOrganizationName(ORGANIZATION_NAME);
     QCoreApplication::setOrganizationDomain(ORGANIZATION_DOMAIN);
