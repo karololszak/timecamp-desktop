@@ -56,6 +56,7 @@ private:
     bool resizing;
     QPixmap background;
     QString taskText;
+    QString displayedTaskText;
     QString timerText;
     QPoint dragPosition;
     QPoint oldPos;
@@ -74,6 +75,7 @@ private:
     int iconWidth;
     int textStartingPoint;
     int textHeight;
+    int taskTextWidth;
     int startStopWidth;
     int timerTextWidth;
 

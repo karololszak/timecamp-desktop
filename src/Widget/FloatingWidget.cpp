@@ -203,33 +203,45 @@ void FloatingWidget::paintEvent(QPaintEvent *) {
     QFontMetrics metrics(usedFont);
 
     iconWidth = background.scaledToHeight(scaleToFit(this->height())).width();
-    textStartingPoint = (this->height() - metrics.boundingRect(taskText).height()) / 2;
+    startStopWidth = fontSize + margin;
+    timerTextWidth = metrics.boundingRect(timerText).width() + margin;
+
     textHeight = metrics.boundingRect(taskText).height();
+    textStartingPoint = (this->height() - textHeight) / 2;
+    taskTextWidth = metrics.boundingRect(taskText).width();
+
+    int maxTaskTextWidth = this->width() - (iconWidth + startStopWidth + timerTextWidth + margin * 4);
+
+    if (taskTextWidth > maxTaskTextWidth) {
+        displayedTaskText = metrics.elidedText(taskText, Qt::TextElideMode::ElideRight, maxTaskTextWidth);
+        taskTextWidth = maxTaskTextWidth + margin;
+    } else {
+        displayedTaskText = taskText;
+    }
 
     // special_offset is used, because PLAY and PAUSE buttons in default font are weirdly spaced
     int special_offset = 0;
     special_offset *= fontSize/12;
 
     taskTextLabel->setFont(usedFont);
-    taskTextLabel->setText(taskText);
+    taskTextLabel->setText(displayedTaskText);
     taskTextLabel->setGeometry(iconWidth + margin,
                                textStartingPoint,
-                               metrics.boundingRect(taskText).width(),
+                               taskTextWidth,
                                textHeight
     );
 
-    startStopWidth = fontSize + margin;
     startStopLabel->setFont(usedFont);
-    startStopLabel->setGeometry(this->width() - startStopWidth - margin,
+    startStopLabel->setGeometry(this->width() - (startStopWidth + margin),
                                 textStartingPoint + special_offset,
                                 startStopWidth,
                                 startStopWidth
     );
 
-    timerTextWidth = metrics.boundingRect(timerText).width() + margin;
     timerTextLabel->setFont(usedFont);
     timerTextLabel->setText(timerText);
-    timerTextLabel->setGeometry(this->width() - startStopWidth - timerTextWidth - margin * 2,
+    timerTextLabel->setGeometry(this->width() - (startStopWidth + timerTextWidth + margin * 2),
+                                // ^this is from left, so we need to go negative on this one
                                 textStartingPoint,
                                 timerTextWidth,
                                 textHeight
