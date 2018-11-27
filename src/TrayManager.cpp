@@ -238,7 +238,7 @@ void TrayManager::assignActions(QMenu *menu) {
     QHash<QString, int>::iterator i;
     for (i = mainWidget->LastTasks.begin(); i != mainWidget->LastTasks.end(); ++i) {
         QAction *temp;
-        temp = new QAction(metrix.elidedText(i.key(), Qt::ElideRight, width), this);
+        temp = new QAction(metrix.elidedText(i.key(), Qt::TextElideMode::ElideRight, width), this);
         temp->setData(i.value());
         tempMenu->addAction(temp);
 //        qDebug() << "ADDED key: " << i.key() << ", value: " << i.value();
