@@ -52,9 +52,15 @@ int main(int argc, char *argv[])
     // install log handler
     LOGUTILS::initLogging();
 
+    // prevent our app from closing
+    QGuiApplication::setQuitOnLastWindowClosed(false);
+
     // Enable high dpi support
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+
+    // Set up an OpenGL Context that can be shared between threads
+    QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 
     // OpenGL is a mess; lets just use software and hammer the CPU
     // https://wiki.qt.io/QtWebEngine/Rendering
@@ -63,9 +69,6 @@ int main(int argc, char *argv[])
     // https://forum.qt.io/topic/51257/imx6-qtwebengine-black-surfaces/9
 
     QCoreApplication::setAttribute(Qt::AA_UseSoftwareOpenGL);
-
-    // prevent our app from closing
-    QGuiApplication::setQuitOnLastWindowClosed(false);
 
     // standard Qt init
     QApplication app(argc, argv);
