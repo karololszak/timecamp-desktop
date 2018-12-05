@@ -4,8 +4,8 @@
 // courtesy of https://andydunkel.net/2017/11/08/qt_log_file_rotation_with_qdebug/
 // slightly modified
 
-#define LOGSIZE 1024 * 1024 * 5 //log size in bytes - 5MB
-#define LOGFILES 10
+#define LOGSIZE 1000 * 1000 * 50 //log size in bytes - 50Mb
+#define LOGFILES 5
 
 #include <QObject>
 #include <QString>
