@@ -82,6 +82,7 @@ private:
     QPixmap playPixmap;
     QPixmap pausePixmap;
     bool timerRunning = false;
+    static const constexpr char* NO_TASK = "no task";
 };
 
 #endif //TIMECAMPDESKTOP_FLOATINGWIDGET_H

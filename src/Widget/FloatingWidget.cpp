@@ -88,11 +88,11 @@ void FloatingWidget::updateWidgetStatus(bool canBeStopped, QString timerName) {
         startStopLabel->setPixmap(playPixmap);
         timerRunning = false;
         this->setTimerText(""); // set empty text (no 0:00 for timer when no task is running)
-        timerName = "No task";
+        timerName = FloatingWidget::NO_TASK;
         timerElapsed = 0;
     }
     if (timerName.isEmpty()) {
-        timerName = "No task";
+        timerName = FloatingWidget::NO_TASK;
     }
     this->setTaskText(timerName);
 }
