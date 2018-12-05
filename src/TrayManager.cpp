@@ -73,7 +73,7 @@ void TrayManager::setupSettings() {
     // set checkboxes
     autoStartAct->setDisabled(false);
     autoStartAct->setChecked(Autorun::checkAutorun());
-    trackerAct->setChecked(settings.value(SETT_TRACK_PC_ACTIVITIES, false).toBool());
+    trackerAct->setChecked(settings.value(SETT_TRACK_PC_ACTIVITIES, true).toBool());
     autoTrackingAct->setChecked(settings.value(SETT_TRACK_AUTO_SWITCH, false).toBool());
 #ifdef _WIDGET_EXISTS_
     widgetAct->setChecked(settings.value(SETT_SHOW_WIDGET, true).toBool());
