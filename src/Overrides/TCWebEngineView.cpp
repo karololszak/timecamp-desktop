@@ -48,10 +48,10 @@ void TCWebEngineView::contextMenuEvent(QContextMenuEvent *event)
     QMenu *menu = page()->createStandardContextMenu();
     const QList<QAction*> contextMenuActions = menu->actions();
 
-    for (QWebEnginePage::WebAction webAction: bannedActionsIds) {
-        for (QAction *action: contextMenuActions) {
-            if (page()->action(webAction) == action) {
-                action->setVisible(false);
+    for (QWebEnginePage::WebAction webAction: bannedActionsIds) { // go over all banned actions
+        for (QAction *action: contextMenuActions) { // pick an action from context menu
+            if (page()->action(webAction) == action) { // if an action in default context menu is in "ban list"
+                action->setVisible(false); // then hide it
             }
         }
     }
