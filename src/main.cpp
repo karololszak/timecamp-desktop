@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
 
     // debugging library locations (most useful for Linux debugging)
-    for(int i = 0; i < 13; i++) {
+    for(int i = 0; i < QLibraryInfo::TestsPath; i++) { // TestsPath is the last location in the enum
         qInfo() << "Location " << i << QLibraryInfo::location(QLibraryInfo::LibraryLocation(i));
     }
     qInfo() << "Loc: " << QCoreApplication::applicationDirPath() << '\n';
@@ -95,6 +95,11 @@ int main(int argc, char *argv[])
     appIcon.addFile(":/Icons/AppIcon_48.png");
     appIcon.addFile(":/Icons/AppIcon_32.png");
     appIcon.addFile(":/Icons/AppIcon_16.png");
+    // all of these: see "TimeCampDesktop.qrc"
+    // order matters! :( paths are of the qrc standard,
+    // would be pointless to store them all in another file
+    // but we can't just include ":/Icons/*.png"
+
     QApplication::setWindowIcon(appIcon);
 
     // create DB Manager instance early, as it needs some time to prepare queries etc
@@ -133,8 +138,8 @@ int main(int argc, char *argv[])
     QObject::connect(comms, &Comms::DbSaveApp, autoTracking, &AutoTracking::checkAppKeywords);
 
     // 2 sec timer for updating submenu and other features
-    auto *twoSecondTimer = new QTimer();
-    QObject::connect(twoSecondTimer, &QTimer::timeout, &mainWidget, &MainWidget::twoSecTimerTimeout);
+    auto *webpageDataUpdateTimer = new QTimer();
+    QObject::connect(webpageDataUpdateTimer, &QTimer::timeout, &mainWidget, &MainWidget::webpageDataUpdateOnInterval);
     // above timeout triggers func that emits checkIsIdle when logged in
     QObject::connect(&mainWidget, &MainWidget::checkIsIdle, windowEventsManager->getCaptureEventsThread(), &WindowEvents::checkIdleStatus);
 
@@ -159,7 +164,7 @@ int main(int argc, char *argv[])
 
     // the timer that syncs via API
     auto *TimeCampTimer = new TCTimer(comms);
-    QObject::connect(syncDBtimer, &QTimer::timeout, TimeCampTimer, &TCTimer::status); // checking Timer Status on the same interval as DB Sync
+    QObject::connect(syncDBtimer, &QTimer::timeout, comms, &Comms::timerStatus); // checking Timer Status on the same interval as DB Sync
 
     // Hotkeys
     auto hotkeyNewTimer = new QHotkey(QKeySequence(KB_SHORTCUTS_START_TIMER), true, &app);
@@ -207,8 +212,8 @@ int main(int argc, char *argv[])
     mainWidget.init(); // init the WebView
 
     // now timers
-    syncDBtimer->start(30 * 1000); // sync DB every 30s
-    twoSecondTimer->start(2 * 1000);
+    syncDBtimer->start(ACTIVITIES_SYNC_INTERVAL * 1000); // sync DB every 30s
+    webpageDataUpdateTimer->start(WEBPAGE_DATA_SYNC_INTERVAL * 1000);
 
     return QApplication::exec();
 }

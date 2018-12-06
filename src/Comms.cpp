@@ -2,8 +2,9 @@
 #include "Settings.h"
 
 #include "DbManager.h"
+#include "ApiHelper.h"
+#include "Formatting.h"
 
-#include <QDateTime>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 
@@ -23,28 +24,12 @@ Comms &Comms::instance()
 Comms::Comms(QObject *parent) : QObject(parent)
 {
     qnam.setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
+    
+    apiHelper = new ApiHelper(API_URL);
+
+    lastTimerStatusCheck = QDateTime::currentMSecsSinceEpoch();
     // connect the callback function
     QObject::connect(&qnam, &QNetworkAccessManager::finished, this, &Comms::genericReply);
-}
-
-QUrlQuery Comms::getApiParams()
-{
-    QUrlQuery params;
-    params.addQueryItem("api_token", apiKey);
-    params.addQueryItem("service", SETT_API_SERVICE_FIELD);
-    params.addQueryItem("app_version", APPLICATION_VERSION);
-    params.addQueryItem("operating_system", QSysInfo::prettyProductName());
-
-    return params;
-}
-
-QUrl Comms::getApiUrl(QString endpoint, QString format = "")
-{
-    QString URL = QString(API_URL) + endpoint + "/api_token/" + apiKey;
-    if (!format.isEmpty()) {
-        URL += "/format/" + format;
-    }
-    return QUrl(URL);
 }
 
 void Comms::timedUpdates()
@@ -58,7 +43,7 @@ void Comms::timedUpdates()
     setCurrentTime(QDateTime::currentMSecsSinceEpoch()); // time of DB fetch is passed, so we can update to it if successful
 
     // we can't be calling API if we don't have the key
-    if (!updateApiKeyFromSettings()) {
+    if (!apiHelper->updateApiKeyFromSettings()) {
         return;
     }
 
@@ -83,7 +68,7 @@ void Comms::tryToSendAppData()
 
     qDebug() << "[AppList] length: " << appList.length();
     // send only if there is anything to send (0 is if "computer activities" are disabled, 1 is sometimes only with "IDLE" - don't send that)
-    if (appList.length() > 1 || (appList.length() == 1 && appList.first().getAppName() != "IDLE")) {
+    if (appList.length() > 1 || (appList.length() == 1 && appList.first().getAppName() != ACTIVITY_IDLE_NAME)) {
         sendAppData(&appList);
         if (appList.length() >= MAX_ACTIVITIES_BATCH_SIZE) {
             qInfo() << "[AppList] was big";
@@ -100,91 +85,85 @@ void Comms::clearLastApp()
     lastApp = nullptr;
 }
 
-void Comms::saveApp(AppData *app)
+void Comms::appChanged(AppData *app)
 {
     if (lastApp == nullptr) {
         qDebug() << "[FIRST APP DETECTED]";
         qint64 now = QDateTime::currentMSecsSinceEpoch();
         lastApp = app;
         app->setStart(now);
-        return;
+        return; // this was a first app, so we have to wait for a second app to have a time diff
     }
 
-    if (app->getAdditionalInfo() != "") {
-        app->setAppName("Internet");
+    if (!app->getAdditionalInfo().isEmpty()) { // if we have "additional info"
+        // this means it's a website, so we set "app name" to internet
+        // then backend does it's magic and each website is a different activity
+        app->setAppName(Comms::WEBSITES_APPNAME);
     }
-
-    bool needsReporting = false;
 
     // not the same activity? we need to log
     if (0 != QString::compare(app->getAppName(), lastApp->getAppName())) { // maybe AppName changed
-        needsReporting = true;
-    }
-    if (!needsReporting && 0 != QString::compare(app->getWindowName(), lastApp->getWindowName())) { // or maybe WindowName changed
-        needsReporting = true;
+        reportApp(app);
+        return;
     }
 
-    if (needsReporting) {
-        qint64 now = QDateTime::currentMSecsSinceEpoch();
-        lastApp->setEnd(now - 1); // it already must have start, now we only update end time
-
-        if((lastApp->getEnd() - lastApp->getStart()) > 1000) { // if activity is longer than 1sec
-            try {
-                emit DbSaveApp(lastApp);
-            } catch (...) {
-                qInfo("[DBSAVE] DB fail");
-                return;
-            }
-
-            qInfo("[DBSAVE] %llds - %s | %s\nADD_INFO: %s \n",
-                   (lastApp->getEnd() - lastApp->getStart()) / 1000,
-                   lastApp->getAppName().toLatin1().constData(),
-                   lastApp->getWindowName().toLatin1().constData(),
-                   lastApp->getAdditionalInfo().toLatin1().constData()
-            );
-
-            app->setStart(now); // saved OK, so new App starts "NOW"
-        } else {
-            qWarning("[DBSAVE] Activity too short (%lldms) - %s",
-                  lastApp->getEnd() - lastApp->getStart(),
-                  lastApp->getAppName().toLatin1().constData()
-            );
-
-            app->setStart(lastApp->getStart()); // not saved, so new App starts when the old one has started
-        }
-
-        // some weird case:
-        if(lastApp->getStart() > lastApp->getEnd()) { // it started later than it finished?!
-            qInfo("[DBSAVE] Activity (%s) broken: from %lld, to %lld",
-                  lastApp->getAppName().toLatin1().constData(),
-                  lastApp->getStart(),
-                  lastApp->getEnd()
-            );
-
-            app->setStart(lastApp->getStart()); // not saved, so new App starts when the old one has started
-        }
-
-        lastApp = app; // update app reference
+    if (0 != QString::compare(app->getWindowName(), lastApp->getWindowName())) { // or maybe WindowName changed
+        reportApp(app);
+        return;
     }
 }
 
-bool Comms::updateApiKeyFromSettings()
+void Comms::reportApp(AppData *app)
 {
-    apiKey = settings.value(SETT_APIKEY).toString().trimmed();
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    lastApp->setEnd(now - 1); // it already must have start, now we only update end time
 
-    if (apiKey.isEmpty() || apiKey == "false") {
-        qInfo() << "[EMPTY API KEY !!!]";
-        return false;
+    if((lastApp->getEnd() - lastApp->getStart()) > 1000) { // if activity is longer than 1sec
+        try {
+            emit DbSaveApp(lastApp);
+        } catch (...) {
+            qWarning("[DBSAVE] DB fail");
+            return;
+        }
+
+        qDebug("[DBSAVE] %llds - %s | %s\nADD_INFO: %s \n",
+               (lastApp->getEnd() - lastApp->getStart()) / 1000,
+               lastApp->getAppName().toLatin1().constData(),
+               lastApp->getWindowName().toLatin1().constData(),
+               lastApp->getAdditionalInfo().toLatin1().constData()
+        );
+
+        app->setStart(now); // saved OK, so new App starts "NOW"
+    } else {
+        qWarning("[DBSAVE] Activity too short (%lldms) - %s",
+              lastApp->getEnd() - lastApp->getStart(),
+              lastApp->getAppName().toLatin1().constData()
+        );
+
+        app->setStart(lastApp->getStart()); // not saved, so new App starts when the old one has started
     }
-    return true;
+
+    // some weird case:
+    if(lastApp->getStart() > lastApp->getEnd()) { // it started later than it finished?!
+        qWarning("[DBSAVE] Activity (%s) broken: from %lld, to %lld",
+              lastApp->getAppName().toLatin1().constData(),
+              lastApp->getStart(),
+              lastApp->getEnd()
+        );
+
+        app->setStart(lastApp->getStart()); // not saved, so new App starts when the old one has started
+    }
+
+    lastApp = app; // update app reference
 }
+
 
 void Comms::sendAppData(QVector<AppData> *appList)
 {
-    bool canSendActivityInfo = !settings.value(QString("SETT_WEB_") + QString("dontCollectComputerActivity")).toBool();
-    bool canSendWindowTitles = settings.value(QString("SETT_WEB_") + QString("collectWindowTitles")).toBool();
+    bool canSendActivityInfo = !settings.value(QString(SETT_WEB_SETTINGS_PREFIX) + QString("dontCollectComputerActivity")).toBool();
+    bool canSendWindowTitles = settings.value(QString(SETT_WEB_SETTINGS_PREFIX) + QString("collectWindowTitles")).toBool();
 
-    QUrlQuery params = getApiParams();
+    QUrlQuery params = apiHelper->getDefaultApiParams();
 
     int count = 0;
 
@@ -199,19 +178,17 @@ void Comms::sendAppData(QVector<AppData> *appList)
     qDebug() << "getEnd: " << app.getEnd();
 */
 
-        if (app.getAppName() == "IDLE" || app.getWindowName() == "IDLE") {
+        // skip sending IDLE activities
+        if (app.getAppName() == ACTIVITY_IDLE_NAME || app.getWindowName() == ACTIVITY_IDLE_NAME) {
             continue;
         }
+
+        // build weird GET params array
 
         QString base_str = QString("computer_activities") + QString("[") + QString::number(count) + QString("]");
 
         if (canSendActivityInfo) {
-            QString tempAppName = app.getAppName();
-            if (tempAppName.isEmpty()) {
-                tempAppName = "explorer2";
-            }
-
-            params.addQueryItem(base_str + QString("[application_name]"), tempAppName);
+            params.addQueryItem(base_str + QString("[application_name]"), app.getAppName());
 
             if (canSendWindowTitles) {
                 params.addQueryItem(base_str + QString("[window_title]"), app.getWindowName());
@@ -229,11 +206,11 @@ void Comms::sendAppData(QVector<AppData> *appList)
             params.addQueryItem(base_str + QString("[window_title]"), "");
         }
 
-        QString start_time = QDateTime::fromMSecsSinceEpoch(app.getStart()).toString(Qt::ISODate).replace("T", " ");
+        QString start_time = Formatting::DateTimeTC(app.getStart());
         params.addQueryItem(base_str + QString("[start_time]"), start_time);
 //            qDebug() << "converted start_time: " << start_time;
 
-        QString end_time = QDateTime::fromMSecsSinceEpoch(app.getEnd()).toString(Qt::ISODate).replace("T", " ");
+        QString end_time = Formatting::DateTimeTC(app.getEnd());
         params.addQueryItem(base_str + QString("[end_time]"), end_time);
 //            qDebug() << "converted end_time: " << end_time;
 
@@ -241,10 +218,10 @@ void Comms::sendAppData(QVector<AppData> *appList)
         lastSync = app.getEnd(); // set our internal variable to value from last app
     }
 
-    QUrl apiUrl = getApiUrl("/activity", "json");
+    QUrl api = apiHelper->activitiesUrl();
 
-    commsReplies.insert(apiUrl, &Comms::appDataReply);
-    this->postRequest(apiUrl, params);
+    commsReplies.insert(api, &Comms::appDataReply);
+    this->postRequest(api, params);
 }
 
 void Comms::appDataReply(QByteArray buffer)
@@ -282,7 +259,7 @@ void Comms::setCurrentTime(qint64 current_time)
 
 void Comms::getUserInfo()
 {
-    QNetworkRequest request(getApiUrl("/user", "json"));
+    QNetworkRequest request(apiHelper->userInfoUrl());
     commsReplies.insert(request.url(), &Comms::userInfoReply);
     this->netRequest(request);
 }
@@ -299,23 +276,23 @@ void Comms::userInfoReply(QByteArray buffer)
     root_group_id = rootObject.value("root_group_id").toString().toInt();
     primary_group_id = rootObject.value("primary_group_id").toString().toInt();
 
-    settings.setValue("SETT_USER_ID", user_id);
-    settings.setValue("SETT_ROOT_GROUP_ID", root_group_id);
-    settings.setValue("SETT_PRIMARY_GROUP_ID", primary_group_id);
+    settings.setValue(SETT_USER_ID, user_id);
+    settings.setValue(SETT_ROOT_GROUP_ID, root_group_id);
+    settings.setValue(SETT_PRIMARY_GROUP_ID, primary_group_id);
     settings.sync();
-    qDebug() << "SETT user_id: " << settings.value("SETT_USER_ID").toInt();
-    qDebug() << "SETT root_group_id: " << settings.value("SETT_ROOT_GROUP_ID").toInt();
-    qDebug() << "SETT primary_group_id: " << settings.value("SETT_PRIMARY_GROUP_ID").toInt();
+    qDebug() << "SETT user_id: " << settings.value(SETT_USER_ID).toInt();
+    qDebug() << "SETT root_group_id: " << settings.value(SETT_ROOT_GROUP_ID).toInt();
+    qDebug() << "SETT primary_group_id: " << settings.value(SETT_PRIMARY_GROUP_ID).toInt();
 }
 
 void Comms::getSettings()
 {
 //    primary_group_id = 134214;
-    QString primary_group_id_str = settings.value("SETT_PRIMARY_GROUP_ID").toString();
+    QString primaryGroupIdAsString = settings.value(SETT_PRIMARY_GROUP_ID).toString();
 
-    QUrl serviceURL = getApiUrl("/group/" + primary_group_id_str + "/setting", "json");
+    QUrl groupSettingsUrl = apiHelper->groupSettingsUrl(primaryGroupIdAsString);
 
-    QUrlQuery params = getApiParams();
+    QUrlQuery params = apiHelper->getDefaultApiParams();
 
     // dapp settings
     params.addQueryItem("name[]", "close_agent"); // bool: can close app?
@@ -348,11 +325,11 @@ void Comms::getSettings()
 //    params.addQueryItem("name[]", "disableDataSplit"); // bool: "can users split their away time breaks"
 
 
-    serviceURL.setQuery(params.query());
+    groupSettingsUrl.setQuery(params.query());
 
-//    qDebug() << "Query URL: " << serviceURL;
+//    qDebug() << "Query URL: " << groupSettingsUrl;
 
-    QNetworkRequest request(serviceURL);
+    QNetworkRequest request(groupSettingsUrl);
 
     commsReplies.insert(request.url(), &Comms::settingsReply);
     this->netRequest(request);
@@ -368,22 +345,22 @@ void Comms::settingsReply(QByteArray buffer)
     for (QJsonValueRef val: rootArray) {
         QJsonObject obj = val.toObject();
 //        qDebug() << obj.value("name").toString() << ": " << obj.value("value").toString();
-        settings.setValue(QString("SETT_WEB_") + obj.value("name").toString(), obj.value("value").toString()); // save web settings to our settingsstore
+        settings.setValue(QString(SETT_WEB_SETTINGS_PREFIX) + obj.value("name").toString(), obj.value("value").toString()); // save web settings to our settingsstore
     }
     settings.sync();
 
-    qDebug() << "SETT idletime: " << settings.value(QString("SETT_WEB_") + QString("idletime")).toInt();
-    qDebug() << "SETT logoffline: " << settings.value(QString("SETT_WEB_") + QString("logoffline")).toBool();
-    qDebug() << "SETT logofflinemin: " << settings.value(QString("SETT_WEB_") + QString("logofflinemin")).toInt();
+    qDebug() << "SETT idletime: " << settings.value(QString(SETT_WEB_SETTINGS_PREFIX) + QString("idletime")).toInt();
+    qDebug() << "SETT logoffline: " << settings.value(QString(SETT_WEB_SETTINGS_PREFIX) + QString("logoffline")).toBool();
+    qDebug() << "SETT logofflinemin: " << settings.value(QString(SETT_WEB_SETTINGS_PREFIX) + QString("logofflinemin")).toInt();
     qDebug() << "SETT dontCollectComputerActivity: "
-            << settings.value(QString("SETT_WEB_") + QString("dontCollectComputerActivity")).toBool();
+            << settings.value(QString(SETT_WEB_SETTINGS_PREFIX) + QString("dontCollectComputerActivity")).toBool();
     qDebug() << "SETT collectWindowTitles: "
-            << settings.value(QString("SETT_WEB_") + QString("collectWindowTitles")).toBool();
+            << settings.value(QString(SETT_WEB_SETTINGS_PREFIX) + QString("collectWindowTitles")).toBool();
 }
 
 void Comms::getTasks()
 {
-    QNetworkRequest request(getApiUrl("/tasks/exclude_archived/0", "json"));
+    QNetworkRequest request(apiHelper->tasksUrl());
     commsReplies.insert(request.url(), &Comms::tasksReply);
     this->netRequest(request);
 }
@@ -487,7 +464,43 @@ void Comms::postRequest(QUrl endpointUrl, QUrlQuery params)
     this->netRequest(request, QNetworkAccessManager::PostOperation, jsonString);
 }
 
-const QString &Comms::getApiKey() const
+void Comms::timerStart(qint64 taskID, qint64 entryID, qint64 startedAtInMS)
 {
-    return apiKey;
+    QUrlQuery params = apiHelper->getDefaultApiParams();
+    params.addQueryItem("action", "start");
+    if (taskID > 0) {
+        params.addQueryItem("task_id", QString::number(taskID));
+    }
+    if (entryID > 0) {
+        params.addQueryItem("task_id", QString::number(entryID));
+    }
+    if (startedAtInMS > 0) {
+        params.addQueryItem("started_at", Formatting::DateTimeTC(startedAtInMS));
+    }
+    this->postRequest(apiHelper->timerUrl(), params);
+}
+
+void Comms::timerStop(qint64 timerID, qint64 stoppedAtInMS)
+{
+    QUrlQuery params = apiHelper->getDefaultApiParams();
+    params.addQueryItem("action", "stop");
+    if (timerID > 0) {
+        params.addQueryItem("timer_id", QString::number(timerID));
+    }
+    if (stoppedAtInMS > 0) {
+        params.addQueryItem("stopped_at", Formatting::DateTimeTC(stoppedAtInMS));
+    }
+    this->postRequest(apiHelper->timerUrl(), params);
+}
+
+void Comms::timerStatus()
+{
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (lastTimerStatusCheck - now < 1000) { // if called less than a second ago; prevents a check-spam
+        return;
+    }
+    lastTimerStatusCheck = now;
+    QUrlQuery params = apiHelper->getDefaultApiParams();
+    params.addQueryItem("action", "status");
+    this->postRequest(apiHelper->timerUrl(), params);
 }

@@ -1,4 +1,6 @@
 #include "AppData.h"
+#include "Settings.h"
+
 #include <QUrl>
 #include <utility>
 
@@ -12,8 +14,11 @@ AppData::AppData(QString appName, QString windowName, QString additionalInfo)
     this->additionalInfo = std::move(additionalInfo);
 }
 
-const QString &AppData::getAppName() const
+const QString AppData::getAppName() const
 {
+    if (appName.isEmpty()) {
+        return ACTIVITY_DEFAULT_APP_NAME; // explorer2
+    }
     return appName;
 }
 

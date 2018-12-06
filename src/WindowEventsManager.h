@@ -21,7 +21,7 @@ signals:
 
 public slots:
     void startOrStopThread(bool startOrStop);
-    void noLongerAway(unsigned long);
+    void awayPopup(unsigned long);
 
 protected:
     explicit WindowEventsManager(QObject *parent = nullptr);
