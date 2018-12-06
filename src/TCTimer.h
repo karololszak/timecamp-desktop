@@ -22,7 +22,6 @@ private:
     qint64 external_task_id;
     QString name;
     QString start_time;
-    qint64 lastStatusCheck;
 
 public:
     explicit TCTimer(Comms *comms);
@@ -35,9 +34,6 @@ signals:
     void timerElapsedSeconds(qint64);
 
 public slots:
-    void start(qint64 taskID = 0, qint64 entryID = 0, qint64 startedAtInMS = 0);
-    void stop(qint64 timerID = 0, qint64 stoppedAtInMS = 0);
-    void status();
     void startTaskByTaskObj(Task *task, bool force);
     void startTaskByID(qint64 taskID);
     void startTimerSlot();
