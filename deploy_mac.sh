@@ -3,11 +3,10 @@
 
 # copied from StackOverflow and improved: https://stackoverflow.com/questions/27952111/unable-to-sign-app-bundle-using-qt-frameworks-on-os-x-10-10
 BUNDLE_NAME="TimeCamp Desktop.app"
-DMG_NAME="TimeCamp-Desktop-2.0.dmg"
 TARGET="cmake-build-relwithdebinfo"
 
 rm -rf ${TARGET:?}/"${BUNDLE_NAME}"
-rm -rf ${TARGET:?}/${DMG_NAME} # dmg HAS TO BE DELETED
+rm -rf ${TARGET:?}/*.dmg # dmg HAS TO BE DELETED
 
 mkdir -p $TARGET
 cmake --build $TARGET --target TimeCampDesktop --
@@ -119,11 +118,10 @@ echo "******* Verify Bundle using spctl ***********"
 spctl -a -vvvv "${BUNDLE_NAME}"
 
 echo "******* Create DMG ***********"
-create-dmg "${BUNDLE_NAME}"
+create-dmg --overwrite "${BUNDLE_NAME}"
 
 echo "******* Verify DMG ***********"
-codesign --verify --deep ${CODESIGN_OPTIONS} $DMG_NAME
-
+codesign --verify --deep ${CODESIGN_OPTIONS} *.dmg
 
 echo "******* Verify DMG using spctl ***********"
-spctl  -a -t open --context context:primary-signature -vvvv $DMG_NAME
+spctl -a -t open --context context:primary-signature -vvvv *.dmg
