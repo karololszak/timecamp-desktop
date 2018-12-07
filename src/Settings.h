@@ -2,11 +2,9 @@
 #ifndef THEGUI_SETTINGS_H
 #define THEGUI_SETTINGS_H
 
-#define ORGANIZATION_NAME "TimeCamp SA"
-#define ORGANIZATION_DOMAIN "TimeCamp.com"
+#include "Versions.h"
 
-#define APPLICATION_NAME "TimeCamp Desktop"
-#define APPLICATION_VERSION "2.1.0.0"
+#define ORGANIZATION_DOMAIN "TimeCamp.com"
 
 #define WINDOW_NAME "TimeCamp"
 #define MARKETING_URL "https://www.timecamp.com/"

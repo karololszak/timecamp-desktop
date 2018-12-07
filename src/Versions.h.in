@@ -1,0 +1,9 @@
+#pragma once
+#ifndef VERSIONS_H
+#define VERSIONS_H
+
+#define ORGANIZATION_NAME "@COMPANY@"
+#define APPLICATION_NAME "@PRODUCT_NAME@"
+#define APPLICATION_VERSION "@PRODUCT_VERSION@"
+
+#endif
