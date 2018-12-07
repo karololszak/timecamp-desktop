@@ -120,7 +120,6 @@ void MainWidget::setupWebview()
     QTWEView = new TCWebEngineView(this);
     QTWEView->setAcceptDrops(false);
     QTWEView->setAttribute(Qt::WA_TranslucentBackground);
-    QTWEView->setStyleSheet("background:transparent");
     connect(QTWEView, &QWebEngineView::loadStarted, this, &MainWidget::handleLoadStarted);
     connect(QTWEView, &QWebEngineView::loadProgress, this, &MainWidget::handleLoadProgress);
     connect(QTWEView, &QWebEngineView::loadFinished, this, &MainWidget::handleLoadFinished);
