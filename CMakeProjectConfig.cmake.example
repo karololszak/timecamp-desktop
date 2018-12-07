@@ -5,9 +5,9 @@ set (VERSION_REVISION 1)
 set (VERSION_BUILD 0)
 
 set(PRODUCT_NAME "TimeCamp Desktop") # the nice visible name
-set(COMPANY "TimeCamp S.A.")
+set(COMPANY "TimeCamp SA")
 set(IDENTIFIER "com.TimeCamp.${PROJECT_NAME}")
-set(COPYRIGHT "Copyright (c) 2010-2018 TimeCamp S.A. All rights reserved.")
+set(COPYRIGHT "Copyright (c) 2010-2018 TimeCamp SA. All rights reserved.")
 
 # Path to Qt precompiled libs:
 #set(CMAKE_PREFIX_PATH "~/Qt/5.10.1/gcc_64/")
