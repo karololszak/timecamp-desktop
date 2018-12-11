@@ -16,8 +16,10 @@ cd $TARGET
 
 #setup the pasted code
 
-QT_FRAMEWORK_PATH=~/Qt/5.10.1/clang_64/lib
-QT_BIN_PATH=~/Qt/5.10.1/clang_64/bin
+QT_PATH=~/Qtv2/5.11.0/clang_64
+
+QT_FRAMEWORK_PATH=${QT_PATH}/lib
+QT_BIN_PATH=${QT_PATH}/bin
 CERTIFICATE="Developer ID Application"
 FRAMEWORKS="QtCore QtGui QtNetwork QtWidgets QtWebEngineWidgets QtSql QtWebEngineCore QtDBus QtPositioning QtPrintSupport QtQml QtQuick QtQuickWidgets QtSvg QtWebChannel"
 #BAD_FRAMEWORKS="QtDBus QtPositioning QtPrintSupport QtQml QtQuick QtQuickWidgets"
