@@ -215,5 +215,8 @@ int main(int argc, char *argv[])
     syncDBtimer->start(ACTIVITIES_SYNC_INTERVAL * 1000); // sync DB every 30s
     webpageDataUpdateTimer->start(WEBPAGE_DATA_SYNC_INTERVAL * 1000);
 
+    QObject::connect(&app, &QApplication::aboutToQuit, windowEventsManager, &WindowEventsManager::stopThread);
+    QObject::connect(&app, &QApplication::aboutToQuit, trayManager, &TrayManager::onAppClose);
+
     return QApplication::exec();
 }
