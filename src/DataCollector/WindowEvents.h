@@ -4,6 +4,7 @@
 #include <QThread>
 #include <QDebug>
 #include "src/AppData.h"
+#include "src/FirefoxUtils.h"
 
 class WindowEvents : public QThread
 {
@@ -20,6 +21,7 @@ protected:
     virtual void run() = 0;
     virtual unsigned long getIdleTime() = 0;
     AppData static * logAppName(QString appName, QString windowName, QString additionalInfo);
+    FirefoxUtils *firefoxUtils;
 private:
     unsigned long lastIdleTimestamp = 0;
     unsigned long currentIdleTimestamp = 0;

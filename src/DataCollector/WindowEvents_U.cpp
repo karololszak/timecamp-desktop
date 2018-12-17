@@ -45,24 +45,25 @@ void WindowEvents_U::logAppName(QString appName, QString windowName)
     AppData *app;
     QString additionalInfo = "";
 
+    app = WindowEvents::logAppName(appName, windowName, additionalInfo); // save app
+
     if (appName == "firefox") {
-        app = WindowEvents::logAppName(appName, windowName, appName); // set additionalInfo to appName for now
-        additionalInfo = getCurrentURLFromFirefox(); // somewhat unreliable - data is usually a few seconds late into the file
+        windowName = windowName.replace(" - Mozilla Firefox", "");
+        additionalInfo = firefoxUtils->getCurrentURLFromFirefox(windowName); // somewhat unreliable - data is usually a few seconds late into the file
     } else if (appName == "chrome") {
-        app = WindowEvents::logAppName(appName, windowName, appName); // same as above, just to skip the "Internet" checker
         additionalInfo = getCurrentURLFromChrome(windowName); // somewhat unreliable - might not get the URL
     }
 
     if (additionalInfo != "") {
         app->setAdditionalInfo(additionalInfo); // after we get the URL, update additionalInfo
-    } else {
-        WindowEvents::logAppName(appName, windowName, additionalInfo);
+        // this is done in this way to make sure we have correct start time of app, and to update URL later
     }
 }
 
 void WindowEvents_U::run()
 {
     qInfo("thread started");
+    firefoxUtils = new FirefoxUtils();
     Display *display;
     Window root;
     XEvent event;
@@ -193,9 +194,14 @@ void WindowEvents_U::run()
         app_name = execCommand(command.c_str());
 
         // save the app name and window name
-        logAppName(QString::fromStdString(app_name), QString::fromUtf8((char *) window_name));
+        logAppName(QString::fromStdString(app_name).trimmed(), QString::fromUtf8((char *) window_name).trimmed());
     }
 
     XCloseDisplay(display);
     qInfo("thread stopped");
+}
+
+WindowEvents_U::~WindowEvents_U()
+{
+    delete firefoxUtils;
 }

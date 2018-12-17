@@ -95,12 +95,6 @@ void Comms::appChanged(AppData *app)
         return; // this was a first app, so we have to wait for a second app to have a time diff
     }
 
-    if (!app->getAdditionalInfo().isEmpty()) { // if we have "additional info"
-        // this means it's a website, so we set "app name" to internet
-        // then backend does it's magic and each website is a different activity
-        app->setAppName(Comms::WEBSITES_APPNAME);
-    }
-
     // not the same activity? we need to log
     if (0 != QString::compare(app->getAppName(), lastApp->getAppName())) { // maybe AppName changed
         reportApp(app);
@@ -119,6 +113,13 @@ void Comms::reportApp(AppData *app)
     lastApp->setEnd(now - 1); // it already must have start, now we only update end time
 
     if((lastApp->getEnd() - lastApp->getStart()) > 1000) { // if activity is longer than 1sec
+
+        if (!lastApp->getAdditionalInfo().isEmpty()) { // if we have "additional info"
+            // this means it's a website, so we set "app name" to internet
+            // then backend does it's magic and each website is a different activity
+            lastApp->setAppName(Comms::WEBSITES_APPNAME);
+        }
+
         try {
             emit DbSaveApp(lastApp);
         } catch (...) {
