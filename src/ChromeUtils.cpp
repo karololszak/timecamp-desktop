@@ -80,7 +80,7 @@ QString getCurrentURLFromChromeConfig(QByteArray &data, QString &windowTitle) {
             urlTitle = urlTitle.trimmed();
             pos = snss.indexOf(urlTitle);
             if (pos == -1) {
-                qDebug("[ChromeURL] Failed to find url for given title");
+                qInfo("[ChromeURL] Failed to find url for given title");
                 return "";
             }
         }
@@ -90,7 +90,7 @@ QString getCurrentURLFromChromeConfig(QByteArray &data, QString &windowTitle) {
     int urlPos = truncatedRef.indexOf("http");
 
     if (urlPos == -1) {
-        qDebug("[ChromeURL] Failed to find 'http' after website name");
+        qInfo("[ChromeURL] Failed to find 'http' after website name");
         return "";
     }
 
@@ -115,15 +115,15 @@ QString getCurrentURLFromChrome(QString windowTitle) {
     QByteArray sessionContent = readChromeFile(chromeSessionFilePath);
     QString activeURL = "";
     if (!sessionContent.isEmpty()) {
-        activeURL = getCurrentURLFromChromeConfig(sessionContent, windowTitle);
+        activeURL = getCurrentURLFromChromeConfig(sessionContent, windowTitle).trimmed();
     }
     if (activeURL.isEmpty()) {
         QString chromeTabsFilePath = getChromeTabsFilePath();
         QByteArray tabsContent = readChromeFile(chromeTabsFilePath);
-        activeURL = getCurrentURLFromChromeConfig(tabsContent, windowTitle);
+        activeURL = getCurrentURLFromChromeConfig(tabsContent, windowTitle).trimmed();
     }
 
-    qDebug() << "[ChromeUtils::getCurrentURLFromChrome] Chrome active URL: " << activeURL;
+//    qDebug() << "[ChromeUtils::getCurrentURLFromChrome] Chrome active URL: " << activeURL;
 
     return activeURL;
 }
