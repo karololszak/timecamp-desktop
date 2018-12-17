@@ -31,6 +31,8 @@ Q_OBJECT
     Q_DISABLE_COPY(TrayManager)
 
 public:
+    static const constexpr char *STOP_TIMER = "Stop timer";
+    static const constexpr char *STOP_PREFIX = "Stop ";
 
     static TrayManager &instance();
     virtual ~TrayManager() {}
@@ -57,9 +59,11 @@ public slots:
     void autoStart(bool checked);
     void tracker(bool checked);
     void autoTracking(bool checked);
+    void autoStop(bool checked);
     void updateRecentTasks();
     void openCloseWindowAction();
     void contactSupport();
+    void onAppClose();
 #ifdef _WIDGET_EXISTS_
     void widgetToggl(bool checked);
 #endif
@@ -73,6 +77,7 @@ private:
 #endif
     QMenu *trayMenu;
     QSettings settings;
+    int menuWidth = 100; // px
 
     void createActions(QMenu *);
     void assignActions(QMenu *);
@@ -84,6 +89,7 @@ private:
     QAction *autoTrackingAct;
     QAction *autoStartAct;
     QAction *widgetAct;
+    QAction *autoStopAct;
     QAction *helpAct;
     QAction *quitAct;
 
