@@ -73,12 +73,19 @@ int main(int argc, char *argv[])
     // standard Qt init
     QApplication app(argc, argv);
 
+    qInfo() << "OS:\t" << QSysInfo::prettyProductName() << ", " << QSysInfo::currentCpuArchitecture();
+    qDebug() << "build ABI: " << QSysInfo::buildAbi();
+    qInfo() << "OpenSSL @ compile:\t" << QSslSocket::sslLibraryBuildVersionNumber() << "\t| "<< QSslSocket::sslLibraryBuildVersionString();
+    qInfo() << "OpenSSL @ runtime:\t"<< QSslSocket::sslLibraryVersionNumber() << "\t| " << QSslSocket::sslLibraryVersionString();
+
+    qDebug() << "Libraries: ";
     // debugging library locations (most useful for Linux debugging)
     for(int i = 0; i < QLibraryInfo::TestsPath; i++) { // TestsPath is the last location in the enum
-        qInfo() << "Location " << i << QLibraryInfo::location(QLibraryInfo::LibraryLocation(i));
+        qDebug() << "\tLocation " << i << QLibraryInfo::location(QLibraryInfo::LibraryLocation(i));
     }
-    qInfo() << "Loc: " << QCoreApplication::applicationDirPath() << '\n';
-    qInfo() << "qt.conf " << QDir(QCoreApplication::applicationDirPath()).exists("qt.conf") << '\n';
+    qDebug() << "App Location: " << QCoreApplication::applicationDirPath();
+    qDebug() << "qt.conf: " << QDir(QCoreApplication::applicationDirPath()).exists("qt.conf");
+    qDebug() << "$PATH: " << qgetenv("PATH");
 #ifdef Q_OS_LINUX
     qInfo() << "$APPIMAGE: " << getenv("APPIMAGE");
     qInfo() << "$APPDIR: " << getenv("APPDIR");
