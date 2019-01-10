@@ -26,7 +26,7 @@
 #include <cstring>
 #include <QtCore/QThread>
 
-#include "third-party/mozilla_lz4/lz4.h"
+#include "third-party/lz4/lib/lz4.h"
 
 const char mozlz4_magic[] = {109, 111, 122, 76, 122, 52, 48, 0};  /* "mozLz40\0" */
 const int decomp_size = 4;  /* 4 bytes size come after the header */

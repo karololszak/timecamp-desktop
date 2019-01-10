@@ -3,6 +3,9 @@ build-*/
 QtCreator_old_projfiles/
 deploy/
 
+# vendor libs are now git submodules
+#third-party/vendor/
+
 CMakeLists.txt.user*
 CMakeSettings.json
 CMakeProjectConfig.cmake

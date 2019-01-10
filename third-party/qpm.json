@@ -1,0 +1,6 @@
+{
+  "dependencies": [
+    "de.skycoder42.qhotkey@1.2.2",
+    "de.skycoder42.qsingleinstance@1.2.2"
+  ]
+}
