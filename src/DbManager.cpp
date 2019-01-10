@@ -149,3 +149,9 @@ const QHash<qint64, Task *> &DbManager::getTaskList() const {
 Task *DbManager::getTaskById(qint64 taskId) {
     return taskList.value(taskId);
 }
+
+void DbManager::loginLogout(bool isLoggedIn, QString pageTitle) {
+    if (!isLoggedIn) {
+        this->clearTaskList();
+    }
+}

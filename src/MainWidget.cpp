@@ -61,6 +61,7 @@ void MainWidget::init()
     this->setupWebview(); // starts the embedded webpage
     MainWidgetWasInitialised = true;
     this->wasTheWindowLeftOpened();
+    this->refreshTimerStatus();
 }
 
 void MainWidget::handleSpacingEvents()
@@ -108,9 +109,12 @@ void MainWidget::closeEvent(QCloseEvent *event)
 void MainWidget::webpageDataUpdateOnInterval()
 {
     if (loggedIn) {
-        emit checkIsIdle();
-        checkIsTimerRunning();
-        fetchRecentTasks();
+        emit checkIsIdle(); // this shouldn't really be here; check idle or not only when user is logged in
+        if(this->isActiveWindow()) { // only when we're in the window, clicking
+//            checkIsTimerRunning();
+            refreshTimerStatus();
+            fetchRecentTasks();
+        }
         QString apiKeyStr = settings.value(SETT_APIKEY).toString().trimmed();
         if (apiKeyStr.isEmpty() || apiKeyStr == "false") {
             fetchAPIkey();
@@ -203,6 +207,7 @@ void MainWidget::webpageTitleChanged(QString title)
 //    qInfo(title.toLatin1().constData());
     checkIfLoggedIn(title);
     if (!loggedIn) {
+        // javascript magic: hide the "news" on login page
         this->runJSinPage("jQuery('#about .news').parent().parent().attr('class', 'hidden').siblings().first().attr('class', 'col-xs-12 col-sm-10 col-sm-push-1 col-md-8 col-md-push-2 col-lg-6 col-lg-push-3')");
         LastTasks.clear(); // clear last tasks
         LastTasksCache = QJsonDocument(); // clear the cache
@@ -210,8 +215,7 @@ void MainWidget::webpageTitleChanged(QString title)
     }
     emit pageStatusChanged(loggedIn, title);
     this->setWindowTitle(title); // https://trello.com/c/J8dCKeV2/43-niech-tytul-apki-desktopowej-sie-zmienia-
-    this->setAttribute(Qt::WA_TranslucentBackground);
-    this->checkIsTimerRunning();
+//    this->checkIsTimerRunning();
 }
 
 void MainWidget::clearCache()
@@ -343,17 +347,35 @@ void MainWidget::refreshTimerPageData()
 
 void MainWidget::refreshTimerStatus()
 {
-    this->runJSinPage("typeof(angular) !== 'undefined' && angular.element(document.body).injector().get('TimerService').status()");
+    this->runJSinPage("typeof(angular) !== 'undefined' && angular.element(document.body).injector().get('TimerService').status();");
+    this->checkIsTimerRunning();
 }
 
 void MainWidget::shouldRefreshTimerStatus(bool isRunning, QString name)
 {
-    QTWEPage->runJavaScript("typeof(angular) !== 'undefined' && "
-                            "angular.element(document.body).injector().get('TimerService').timer.isTimerRunning == " + QString::number(isRunning)
-                            ,
-                            [this](const QVariant &v)
+    if (!this->isActiveWindow()) { // only when we're in the window, clicking
+        return;
+    }
+
+    QString timerTempStr = "angular.element(document.body).injector().get('TimerService').timer";
+
+    QString jsToRun = "typeof(angular) !== 'undefined' &&  typeof("+timerTempStr+".isTimerRunning) !== 'undefined' "
+                      " && "+timerTempStr+".isTimerRunning == " + QString::number(isRunning);
+
+    if(!name.isEmpty()) {
+        // if we have a timer name, make sure it's the same in the web AND in cpp
+        jsToRun += " && ( typeof("+timerTempStr+".name) !== 'undefined' && "+timerTempStr+".name == '" + name + "')";
+    } else {
+        // if we don't have timer name, make sure it's either undefined OR "same" (empty = "", spaces, etc)
+        jsToRun += " && ( typeof("+timerTempStr+".name) === 'undefined' || "+timerTempStr+".name == '" + name + "')";
+    }
+
+    qDebug() << "Running JS2: " << jsToRun;
+
+    QTWEPage->runJavaScript(jsToRun,
+                            [this, isRunning, name](const QVariant &v)
                             {
-                                if(!v.toBool()) { // when the above statement IS NOT TRUE (i.e. we have no angular or isTimerRunning is a different flag
+                                if(v.isValid() && !v.toBool()) { // when the above statement IS NOT TRUE (i.e. we have no angular or isTimerRunning is a different flag
                                     this->refreshTimerStatus();
                                 }
                             });
@@ -364,6 +386,9 @@ void MainWidget::checkIsTimerRunning()
     QTWEPage->runJavaScript("typeof(angular) !== 'undefined' && JSON.stringify(angular.element(document.body).injector().get('TimerService').timer)",
         [this](const QVariant &v)
     {
+        if(!v.isValid()) {
+            return;
+        }
         emit updateTimerStatus(v.toByteArray());
     });
 }
@@ -375,6 +400,10 @@ void MainWidget::fetchRecentTasks()
 //        LastTasks.clear(); // don't need to clear a QHash
 
 //        qDebug() << v.toString();
+        if (!v.isValid()) {
+            return;
+        }
+
         QJsonDocument itemDoc = QJsonDocument::fromJson(v.toByteArray());
         if (itemDoc != LastTasksCache) {
             QJsonArray rootArray = itemDoc.array();
@@ -396,7 +425,7 @@ void MainWidget::fetchAPIkey()
     {
 //        qDebug() << "API Key: " << v.toString();
 
-        if(v.toBool()) { // http://doc.qt.io/qt-5/qvariant.html#toBool
+        if(v.isValid() && v.toBool()) { // http://doc.qt.io/qt-5/qvariant.html#toBool
             // is true for many types when non-zero; and (quote):
 
             // "[returns true] if the variant has type QString or QByteArray

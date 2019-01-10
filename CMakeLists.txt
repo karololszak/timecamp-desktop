@@ -90,6 +90,8 @@ list(APPEND SOURCE_FILES
         "src/Comms.cpp"
         "src/AppData.cpp"
         "src/Task.cpp"
+        "src/Keyword.cpp"
+        "src/KeywordUtils.h"
         "src/AutoTracking.cpp"
         "src/Autorun.cpp"
         "src/WindowEventsManager.cpp"
