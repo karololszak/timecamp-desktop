@@ -2,6 +2,8 @@
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonObject>
+#include <QtCore/QDir>
+
 #include "MainWidget.h"
 #include "ui_MainWidget.h"
 
@@ -43,6 +45,9 @@ MainWidget::MainWidget(QWidget *parent)
     this->setAcceptDrops(false);
 
     restoreGeometry(settings.value("mainWindowGeometry").toByteArray()); // from QWidget; restore saved window position
+
+    taskbar = new QTaskbarControl(this);
+    taskbar->setAttribute(QTaskbarControl::LinuxDesktopFile, QDir::homePath() + "/.config/autostart/TimeCamp Desktop.desktop");
 }
 
 MainWidget::~MainWidget()
@@ -138,6 +143,7 @@ void MainWidget::setupWebview()
     QTWEPage = new QWebEnginePage(QTWEProfile, QTWEView);
     QTWEPage->setBackgroundColor(Qt::transparent);
     QTWEView->setPage(QTWEPage);
+    connect(QTWEProfile, &QWebEngineProfile::downloadRequested, this, &MainWidget::downloadRequested);
 
     refreshBind = new QShortcut(QKeySequence::Refresh, this);
     refreshBind->setContext(Qt::ApplicationShortcut);
@@ -161,13 +167,18 @@ void MainWidget::handleLoadStarted()
 {
     QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 //    qDebug() << "cursor: load started";
+    taskbar->setProgressVisible(true);
 }
 
 void MainWidget::handleLoadProgress(int progress)
 {
 //    qDebug() << "cursor: load progress " << progress;
+    if (progress > 0) {
+        taskbar->setProgress((float) progress / 100);
+    }
     if (progress == 100) {
         QGuiApplication::restoreOverrideCursor(); // pop from the cursor stack
+        taskbar->setProgressVisible(false);
     }
 }
 
@@ -176,6 +187,7 @@ void MainWidget::handleLoadFinished(bool ok)
     Q_UNUSED(ok);
     QGuiApplication::restoreOverrideCursor(); // pop from the cursor stack
 //    qDebug() << "cursor: load finished " << ok;
+    taskbar->setProgressVisible(false);
 }
 
 void MainWidget::wasTheWindowLeftOpened()
@@ -408,4 +420,62 @@ void MainWidget::setApiKey(const QString &apiKey)
 {
     settings.setValue(SETT_APIKEY, apiKey); // save apikey to settings
     settings.sync();
+}
+
+void MainWidget::downloadRequested(QWebEngineDownloadItem* download) {
+//    qDebug() << "Format: " <<  download->savePageFormat();
+    qDebug() << "url: " << download->url();
+    qDebug() << "mimeType: " << download->mimeType();
+    qDebug() << "Save path: " << download->path();
+    qDebug() << "Bytes: " << download->receivedBytes() << " / " << download->totalBytes();
+
+    QMessageBox msgBox;
+    msgBox.setTextInteractionFlags(Qt::NoTextInteraction);
+    msgBox.setIconPixmap(QPixmap(MAIN_ICON).scaledToWidth(96));
+    msgBox.setText(tr("You started a file download"));
+    msgBox.setInformativeText(tr("Do you want to save this file to:") + QStringLiteral("\n") + download->path() + QStringLiteral("?"));
+    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msgBox.setDefaultButton(QMessageBox::Yes);
+
+    // bring the Message to front
+//    msgBox.show();
+//    msgBox.setWindowState(Qt::WindowActive);
+//    msgBox.raise();  // for MacOS
+//    msgBox.activateWindow(); // for Windows
+
+    QObject::connect(&msgBox, &QDialog::finished, [this, &download](int ret)
+    {
+        switch (ret) {
+            case QMessageBox::Yes:
+            default:
+                qDebug() << "[SaveFileDialog] Yes";
+                download->accept();
+                QObject::connect(download, &QWebEngineDownloadItem::downloadProgress, this, &MainWidget::setDownloadProgress);
+                QObject::connect(download, &QWebEngineDownloadItem::finished, this, &MainWidget::downloadFinished);
+                // no need to call disconnect() - "The connection will automatically disconnect if the sender or the context is destroyed." - DOCS
+                // sender (here) - the 'download'
+                break;
+            case QMessageBox::No:
+                qDebug() << "[SaveFileDialog] No";
+                download->cancel();
+                break;
+        }
+    });
+
+    msgBox.exec();
+}
+
+void MainWidget::setDownloadProgress(qint64 bytesReceived, qint64 bytesTotal) {
+    taskbar->setProgressVisible(true);
+    if (bytesTotal > 0) {
+        taskbar->setProgress((float) bytesReceived / bytesTotal);
+    }
+}
+
+void MainWidget::downloadFinished() {
+    // TODO: add some form of notification - KDE/snorenotify?
+    qDebug() << "[Download] Finished";
+
+    taskbar->setProgress(1);
+    taskbar->setProgressVisible(false);
 }
