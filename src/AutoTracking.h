@@ -6,6 +6,7 @@
 #include <QString>
 #include <QtCore/QVector>
 #include "Task.h"
+#include "Keyword.h"
 #include "AppData.h"
 
 class AutoTracking: public QObject
@@ -18,19 +19,42 @@ Q_OBJECT
 
 protected:
     explicit AutoTracking(QObject *parent = nullptr);
+//    checkOneKeyword(Keyword);
 
 public:
     static AutoTracking &instance();
     qint64 getLastUpdate() const;
 
-    Task *matchActivityToTaskKeywords(AppData *app);
+    Task *matchActivityToTaskKeywords(const AppData *app);
 
 public slots:
-    void checkAppKeywords(AppData *app);
+    void checkAppKeywords(const AppData *app);
     void setLastUpdate(qint64 lastUpdate);
 
 signals:
-    void foundTask(Task *matchedTask, bool force);
+    void foundTask(qint64 taskId, bool force);
+
+private:
+    QRegularExpression regularExpression;
+    QString appToDataString(const AppData *app);
+
+    int taskScore;
+
+    bool taskNeedsOneOf;
+    int taskOneOfMatchedCount;
+
+    bool skipTask;
+    bool taskWasWeak;
+
+    bool keywordFound;
+
+    Task *bestTask;
+    bool bestWasWeak;
+    int bestTaskScore;
+
+    void taskLoop(const QString &dataWithPotentialKeyword);
+
+    void keywordLoop(const QString &dataWithPotentialKeyword, QStringList &taskKeywords);
 };
 
 

@@ -53,6 +53,7 @@ public:
 
 signals:
     void DbSaveApp(AppData *);
+    void announceAppChange(AppData *);
     void gotGenericReply(QNetworkReply *reply, QByteArray buffer);
 
 protected:

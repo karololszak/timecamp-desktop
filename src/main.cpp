@@ -127,6 +127,7 @@ int main(int argc, char *argv[])
     trayManager->setupTray(&mainWidget); // connect the mainWidget to tray
 
     QObject::connect(&mainWidget, &MainWidget::pageStatusChanged, trayManager, &TrayManager::loginLogout);
+    QObject::connect(&mainWidget, &MainWidget::pageStatusChanged, dbManager, &DbManager::loginLogout);
     QObject::connect(&mainWidget, &MainWidget::lastTasksChanged, trayManager, &TrayManager::updateRecentTasks);
     QObject::connect(trayManager, &TrayManager::pcActivitiesValueChanged, windowEventsManager, &WindowEventsManager::startOrStopThread);
 
@@ -142,9 +143,11 @@ int main(int argc, char *argv[])
     // Stopped logging bind
     QObject::connect(windowEventsManager, &WindowEventsManager::dataCollectingStopped, comms, &Comms::clearLastApp);
 
+    // change apps in autotracking ASAP
+    QObject::connect(comms, &Comms::announceAppChange, autoTracking, &AutoTracking::checkAppKeywords);
+
     // Save apps to sqlite on signal-slot basis
     QObject::connect(comms, &Comms::DbSaveApp, dbManager, &DbManager::saveAppToDb);
-    QObject::connect(comms, &Comms::DbSaveApp, autoTracking, &AutoTracking::checkAppKeywords);
 
     // 2 sec timer for updating submenu and other features
     auto *webpageDataUpdateTimer = new QTimer();
@@ -188,7 +191,7 @@ int main(int argc, char *argv[])
     QObject::connect(hotkeyOpenWindow, &QHotkey::activated, trayManager, &TrayManager::openCloseWindowAction);
 
     // Starting Timer
-    QObject::connect(autoTracking, &AutoTracking::foundTask, TimeCampTimer, &TCTimer::startTaskByTaskObj);
+    QObject::connect(autoTracking, &AutoTracking::foundTask, TimeCampTimer, &TCTimer::startTaskByID);
     QObject::connect(trayManager, &TrayManager::taskSelected, TimeCampTimer, &TCTimer::startTaskByID);
 
     QObject::connect(theWidget, &FloatingWidget::taskNameClicked, TimeCampTimer, &TCTimer::startIfNotRunningYet);
