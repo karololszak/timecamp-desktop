@@ -165,6 +165,10 @@ void WindowEvents_M::GetActiveApp(QString processName)
         }
     }
 
+    if (processName == "loginwindow") {
+        return;
+    }
+
     //Get Window Name or
     appTitle = GetProcWindowName(processName);
 
