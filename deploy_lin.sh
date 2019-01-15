@@ -25,7 +25,7 @@ mkdir -p $SRC
 cd $SRC
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_MAKE_PROGRAM=/usr/bin/make -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -G "Unix Makefiles" "../"
 cd ../
-cmake --build $SRC --target "${CMAKE_NAME}" -- # build
+cmake --build $SRC --target "${CMAKE_NAME}" -- -j $(nproc) # build
 cp $SRC/"${CMAKE_NAME}" $TARGET"/usr/bin/""${BUNDLE_NAME}" # copy the binary
 cp res"/${BUNDLE_NAME}.desktop" $TARGET"/usr/share/applications/${BUNDLE_NAME}.desktop" # copy app.desktop file
 # copy icons

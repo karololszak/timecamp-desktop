@@ -6,7 +6,6 @@
 #include "Settings.h"
 #include "TrayManager.h"
 #include "MainWidget.h"
-
 #include "Autorun.h"
 
 TrayManager &TrayManager::instance() {
@@ -15,8 +14,7 @@ TrayManager &TrayManager::instance() {
 }
 
 TrayManager::TrayManager(QObject *parent)
-    : QObject(parent) {
-}
+    : QObject(parent) {}
 
 void TrayManager::setupTray(MainWidget *parent) {
     mainWidget = parent;
@@ -72,7 +70,7 @@ void TrayManager::setupSettings() {
     qDebug() << "[Tray] Update checkboxes (Settings)";
     // set checkboxes
     autoStartAct->setDisabled(false);
-    autoStartAct->setChecked(Autorun::checkAutorun());
+    autoStartAct->setChecked(Autorun::instance().getAutostart()->isAutoStartEnabled());
     trackerAct->setChecked(settings.value(SETT_TRACK_PC_ACTIVITIES, true).toBool());
     autoTrackingAct->setChecked(settings.value(SETT_TRACK_AUTO_SWITCH, false).toBool());
 #ifdef _WIDGET_EXISTS_
@@ -104,11 +102,7 @@ void TrayManager::updateStopMenu(bool canBeStopped, QString timerName) {
 }
 
 void TrayManager::autoStart(bool checked) {
-    if (checked) {
-        Autorun::enableAutorun();
-    } else {
-        Autorun::disableAutorun();
-    }
+    Autorun::instance().getAutostart()->setAutoStartEnabled(checked);
 }
 
 void TrayManager::tracker(bool checked) {
@@ -205,6 +199,9 @@ void TrayManager::createActions(QMenu *menu) {
     autoStartAct->setDisabled(true); // disable by default, till we login
     autoStartAct->setCheckable(true);
     connect(autoStartAct, &QAction::triggered, this, &TrayManager::autoStart);
+
+    QObject::connect(Autorun::instance().getAutostart(), &QAutoStart::autoStartEnabledChanged,
+                     autoStartAct, &QAction::setChecked);
 
     autoStopAct = new QAction(tr("Stop timer when quitting the app"), this);
     autoStopAct->setCheckable(true);
