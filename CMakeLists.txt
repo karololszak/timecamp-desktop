@@ -27,7 +27,6 @@ configure_file (
     "src/Versions.h.in"
     "${PROJECT_BINARY_DIR}/Versions.h"
 )
-include_directories("${PROJECT_BINARY_DIR}")
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -153,41 +152,60 @@ if (APPLE)
     set(Qt5_OS_LIBRARIES Qt5::MacExtras)
 endif ()
 
-# QHotkey
-set(QHotkey_PATH "third-party/vendor/de/skycoder42/qhotkey/QHotkey")
+
+# QPM
+set(QPM_PATH "third-party/vendor")
+include_directories(${QPM_PATH})
+
+# Qt useful modules dev
+set(SkyCoder_PATH "${QPM_PATH}/de/skycoder42")
+include_directories(${SkyCoder_PATH})
+
+
+set(QHotkey_PATH "${SkyCoder_PATH}/qhotkey/QHotkey")
 list(APPEND SOURCE_FILES
         "${QHotkey_PATH}/QHotkey"
         "${QHotkey_PATH}/qhotkey.cpp"
         "${QHotkey_PATH}/qhotkey_p.h"
         )
 
-set(QSingleInstance_PATH "third-party/vendor/de/skycoder42/qsingleinstance/QSingleInstance")
+set(QSingleInstance_PATH "${SkyCoder_PATH}/qsingleinstance/QSingleInstance")
 list(APPEND SOURCE_FILES
         "${QSingleInstance_PATH}/clientinstance.cpp"
         "${QSingleInstance_PATH}/qsingleinstance.cpp"
         "${QSingleInstance_PATH}/qsingleinstance_p.cpp"
         )
 
-set(QTaskbarControl_PATH "third-party/vendor/de/skycoder42/qtaskbarcontrol")
+set(QTaskbarControl_PATH "${SkyCoder_PATH}/qtaskbarcontrol")
 list(APPEND SOURCE_FILES
     "${QTaskbarControl_PATH}/qtaskbarcontrol.cpp"
     "${QTaskbarControl_PATH}/qtaskbarcontrol_p.h"
     )
 
+set(QAutoStart_PATH "${SkyCoder_PATH}/qautostart")
+list(APPEND SOURCE_FILES
+    "${QAutoStart_PATH}/qautostart.cpp"
+    "${QAutoStart_PATH}/qautostart_p.h"
+    )
+
+
 if (WIN32)
     list(APPEND SOURCE_FILES
             "${QHotkey_PATH}/qhotkey_win.cpp"
             "${QTaskbarControl_PATH}/qtaskbarcontrol_win.cpp"
+            "${QAutoStart_PATH}/qautostart_win.cpp"
             )
 elseif (UNIX AND NOT APPLE)
     list(APPEND SOURCE_FILES
             "${QHotkey_PATH}/qhotkey_x11.cpp"
-        "${QTaskbarControl_PATH}/qtaskbarcontrol_x11.cpp"
+            "${QTaskbarControl_PATH}/qtaskbarcontrol_x11.cpp"
+            "${QAutoStart_PATH}/qautostart_x11.cpp"
             )
 elseif (APPLE)
     list(APPEND SOURCE_FILES
             "${QHotkey_PATH}/qhotkey_mac.cpp"
-        "${QTaskbarControl_PATH}/qtaskbarcontrol_mac.mm"
+            "${QTaskbarControl_PATH}/qtaskbarcontrol_mac.mm"
+            "${QAutoStart_PATH}/qautostart_mac.cpp"
             )
 endif ()
 
@@ -206,6 +224,9 @@ set(RESOURCE_FILES res/TimeCampDesktop.qrc)
 add_executable(${PROJECT_NAME} ${OS_BUNDLE} # Expands to WIN32 or MACOS_BUNDLE depending on OS
         ${SOURCE_FILES} ${META_FILES_TO_INCLUDE} ${RESOURCE_FILES}
         )
+
+# add "Versions.h"
+include_directories("${PROJECT_BINARY_DIR}")
 
 if (WIN32)
     # hide windows console...

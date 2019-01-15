@@ -10,7 +10,6 @@
 #endif
 
 #include "Settings.h"
-#include "Autorun.h"
 #include "MainWidget.h"
 #include "Comms.h"
 #include "DbManager.h"
@@ -20,9 +19,10 @@
 #include "DataCollector/WindowEvents.h"
 #include "WindowEventsManager.h"
 #include "Widget/FloatingWidget.h"
+#include "Autorun.h"
 
-#include "third-party/vendor/de/skycoder42/qhotkey/QHotkey/qhotkey.h"
-#include "third-party/vendor/de/skycoder42/qsingleinstance/QSingleInstance/qsingleinstance.h"
+#include "qhotkey/QHotkey/qhotkey.h"
+#include "qsingleinstance/QSingleInstance/qsingleinstance.h"
 #include "third-party/QTLogRotation/logutils.h"
 
 void firstRun()
@@ -30,8 +30,11 @@ void firstRun()
     QSettings settings;
 
     if (settings.value(SETT_IS_FIRST_RUN, true).toBool()) {
-        Autorun::enableAutorun();
-#ifdef Q_OS_MACOS
+        Autorun::instance().getAutostart()->setAutoStartEnabled(true);
+
+#if defined(Q_OS_LINUX)
+        Autorun::instance().addLinuxStartMenuEntry();
+#elif defined(Q_OS_MACOS)
         enableAssistiveDevices();
 #endif
     }
@@ -89,8 +92,8 @@ int main(int argc, char *argv[])
     qDebug() << "qt.conf: " << QDir(QCoreApplication::applicationDirPath()).exists("qt.conf");
     qDebug() << "$PATH: " << qgetenv("PATH");
 #ifdef Q_OS_LINUX
-    qInfo() << "$APPIMAGE: " << getenv("APPIMAGE");
-    qInfo() << "$APPDIR: " << getenv("APPDIR");
+    qInfo() << "$APPIMAGE: " << qgetenv("APPIMAGE");
+    qInfo() << "$APPDIR: " << qgetenv("APPDIR");
 #endif
 
     // check if it's a first run, and i.e. on Mac ask for permissions
@@ -98,12 +101,12 @@ int main(int argc, char *argv[])
 
     // set the app icon
     QIcon appIcon = QIcon(MAIN_ICON);
-    appIcon.addFile(":/Icons/AppIcon_256.png");
-    appIcon.addFile(":/Icons/AppIcon_128.png");
-    appIcon.addFile(":/Icons/AppIcon_64.png");
-    appIcon.addFile(":/Icons/AppIcon_48.png");
-    appIcon.addFile(":/Icons/AppIcon_32.png");
-    appIcon.addFile(":/Icons/AppIcon_16.png");
+    appIcon.addFile(":/Icons/AppIcon_256.png", QSize(256, 256));
+    appIcon.addFile(":/Icons/AppIcon_128.png", QSize(128, 128));
+    appIcon.addFile(":/Icons/AppIcon_64.png", QSize(64, 64));
+    appIcon.addFile(":/Icons/AppIcon_48.png", QSize(48, 48));
+    appIcon.addFile(":/Icons/AppIcon_32.png", QSize(32, 32));
+    appIcon.addFile(":/Icons/AppIcon_16.png", QSize(16, 16));
     // all of these: see "TimeCampDesktop.qrc"
     // order matters! :( paths are of the qrc standard,
     // would be pointless to store them all in another file
