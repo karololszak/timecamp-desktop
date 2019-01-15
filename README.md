@@ -143,9 +143,13 @@ For more details see `deploy_win.bat`, `deploy_mac.sh` and `deploy_lin.sh` scrip
 
 Source:
 * [Qt](https://www1.qt.io/) [LGPLv3] - we're using it under LGPLv3 license, with prebuilt binaries provided on their website
-* [QHotkey](https://github.com/Skycoder42/QHotkey) [BSD 3-Clause] - globally working hotkeys for Windows, macOS and Linux
 * [LZ4](http://lz4.github.io/lz4/) [BSD 2-Clause] - for reading Firefox data (see `FirefoxUtils.cpp`)
 * [mini-cmake-qt](https://github.com/euler0/mini-cmake-qt) [[Unlicense](http://unlicense.org/)d] - a template for the simplest possible version of a working,  multi-platform Qt5 project
+* [QHotkey](https://github.com/Skycoder42/QHotkey) [BSD 3-Clause] - globally working hotkeys for Windows, macOS and Linux
+* [QSingleInstance](https://github.com/Skycoder42/QSingleInstance) [BSD 3-Clause] - only one app instance running
+* [QTaskbarControl](https://github.com/Skycoder42/QTaskbarControl) [BSD 3-Clause] - os-agnostic taskbar progress
+* [QAutoStart](https://github.com/Skycoder42/QAutoStart) [BSD 3-Clause] - class for managing Autorun/Autostart on all OSes 
+(also used for creating Linuxes `.desktop` file to add it to launchers)
 * Previous TimeCamp Desktop App - sources for macOS widgets and data collecting
 
 Tools:
@@ -154,6 +158,9 @@ Tools:
 
 ## Authors
 
-* **[Karol Olszacki](https://github.com/karololszak)** - *Initial work*
+* **[Karol Olszacki](https://github.com/karololszacki)** - *initial work*
+
+### Special Thanks
+* **[Felix Barz](https://github.com/Skycoder42)** - for his QHotkey, QSingleInstance, QTaskbarControl and QAutoStart modules
 
 See also the list of [contributors](https://github.com/timecamp/timecamp-desktop/contributors) who participated in this project.
