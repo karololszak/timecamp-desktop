@@ -45,25 +45,25 @@ void AppData::setAdditionalInfo(const QString &additionalInfo)
     AppData::additionalInfo = additionalInfo;
 }
 
-qint64 AppData::getStart() const
+const qint64 AppData::getStart() const
 {
     return start;
 }
-void AppData::setStart(qint64 start)
+void AppData::setStart(const qint64 start)
 {
     AppData::start = start;
 }
 
-qint64 AppData::getEnd() const
+const qint64 AppData::getEnd() const
 {
     return end;
 }
-void AppData::setEnd(qint64 end)
+void AppData::setEnd(const qint64 end)
 {
     AppData::end = end;
 }
 
-QString AppData::getDomainFromAdditionalInfo()
+const QString AppData::getDomainFromAdditionalInfo() const
 {
     QUrl url(this->additionalInfo);
     return url.host();

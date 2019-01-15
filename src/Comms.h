@@ -25,9 +25,9 @@ Q_OBJECT
     int retryCount = 0;
     bool lastBatchBig = false;
 
-    int user_id;
-    int root_group_id;
-    int primary_group_id;
+    qint64 user_id;
+    qint64 root_group_id;
+    qint64 primary_group_id;
     QNetworkAccessManager qnam;
     QHash<QUrl, std::function<void(Comms *, QByteArray buffer)>> commsReplies; // see https://stackoverflow.com/a/7582574/8538394
 
@@ -38,7 +38,7 @@ public:
 
     void appChanged(AppData *app);
     void reportApp(AppData *app);
-    void sendAppData(QVector<AppData> *appList);
+    void sendAppData(const QVector<AppData> *appList);
     void getUserInfo();
     void getSettings();
     void getTasks();

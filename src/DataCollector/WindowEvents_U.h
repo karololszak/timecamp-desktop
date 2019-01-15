@@ -12,7 +12,7 @@
 class WindowEvents_U : public WindowEvents
 {
 public:
-    virtual ~WindowEvents_U();
+    ~WindowEvents_U() override;
 
 protected:
     void run() override; // your thread implementation goes here

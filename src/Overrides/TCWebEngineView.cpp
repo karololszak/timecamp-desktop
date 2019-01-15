@@ -10,21 +10,16 @@
 // Workaround to get opened URL from: https://bugreports.qt.io/browse/QTBUG-56637
 
 
-TCWebEngineView::TCWebEngineView(QWidget *parent) : QWebEngineView(parent), result(nullptr)
-{
-    bannedActionsIds.push_back(QWebEnginePage::PasteAndMatchStyle);
-    bannedActionsIds.push_back(QWebEnginePage::OpenLinkInNewBackgroundTab);
-    bannedActionsIds.push_back(QWebEnginePage::OpenLinkInThisWindow);
-    bannedActionsIds.push_back(QWebEnginePage::OpenLinkInNewWindow);
-    bannedActionsIds.push_back(QWebEnginePage::OpenLinkInNewTab);
-    bannedActionsIds.push_back(QWebEnginePage::DownloadLinkToDisk);
-    bannedActionsIds.push_back(QWebEnginePage::DownloadImageToDisk);
-    bannedActionsIds.push_back(QWebEnginePage::DownloadMediaToDisk);
-    bannedActionsIds.push_back(QWebEnginePage::InspectElement);
-    bannedActionsIds.push_back(QWebEnginePage::RequestClose);
-    bannedActionsIds.push_back(QWebEnginePage::SavePage);
-    bannedActionsIds.push_back(QWebEnginePage::OpenLinkInNewBackgroundTab);
-    bannedActionsIds.push_back(QWebEnginePage::ViewSource);
+TCWebEngineView::TCWebEngineView(QWidget *parent)
+    : QWebEngineView(parent), result(nullptr),
+      bannedActionsIds{
+          QWebEnginePage::PasteAndMatchStyle, QWebEnginePage::PasteAndMatchStyle,
+          QWebEnginePage::OpenLinkInNewBackgroundTab, QWebEnginePage::OpenLinkInThisWindow,
+          QWebEnginePage::OpenLinkInNewWindow, QWebEnginePage::OpenLinkInNewTab, QWebEnginePage::DownloadLinkToDisk,
+          QWebEnginePage::DownloadImageToDisk, QWebEnginePage::DownloadMediaToDisk, QWebEnginePage::InspectElement,
+          QWebEnginePage::RequestClose, QWebEnginePage::SavePage, QWebEnginePage::OpenLinkInNewBackgroundTab,
+          QWebEnginePage::ViewSource
+} {
 }
 
 TCWebEngineView::~TCWebEngineView()

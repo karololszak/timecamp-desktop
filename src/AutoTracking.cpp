@@ -143,7 +143,7 @@ void AutoTracking::keywordLoop(const QString &dataWithPotentialKeyword, QStringL
 AutoTracking::AutoTracking(QObject *parent)
     : QObject(parent)
 {
-    regularExpression = QRegularExpression(R"(^\[\*([0-9]+)\])");
+    regularExpression = QRegularExpression(QStringLiteral(R"(^\[\*([0-9]+)\])"));
 }
 
 qint64 AutoTracking::getLastUpdate() const
