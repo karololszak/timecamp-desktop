@@ -3,7 +3,7 @@
 
 QString Formatting::DateTimeTC(qint64 msecs)
 {
-    return QDateTime::fromMSecsSinceEpoch(msecs).toString(Qt::ISODate).replace("T", " ");
+    return QDateTime::fromMSecsSinceEpoch(msecs).toString(Qt::ISODate).replace(QLatin1String("T"), QLatin1String(" "));
 }
 
 void Formatting::jsonObjValToInt(const QJsonObject jsonObj, QString valName, qint64 *value)

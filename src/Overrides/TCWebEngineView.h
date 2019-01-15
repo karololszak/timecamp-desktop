@@ -18,7 +18,7 @@ protected:
 
 private:
     TCWebEngineView *result;
-    QList<QWebEnginePage::WebAction> bannedActionsIds;
+    const QList<QWebEnginePage::WebAction> bannedActionsIds;
 };
 
 

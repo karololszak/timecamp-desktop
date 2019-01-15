@@ -36,7 +36,7 @@ QAutoStart *Autorun::getAutostart() const {
 void Autorun::addLinuxIcon()
 {
     iconPath = QStandardPaths::standardLocations(QStandardPaths::AppLocalDataLocation).first() + "/" + APP_ICON; // determine where we want Linux icon
-    QFile::copy(":/Icons/AppIcon_128.png", iconPath); // copy from our "res"
+    QFile::copy(QStringLiteral(":/Icons/AppIcon_128.png"), iconPath); // copy from our "res"
     autostart->setExtraProperty(QAutoStart::IconName, iconPath); // set it to both autostart and startMenuEntry
 }
 

@@ -28,7 +28,7 @@ unsigned long WindowEvents_U::getIdleTime()
 
 std::string WindowEvents_U::execCommand(const char *cmd)
 {
-    std::array<char, 128> buffer;
+    std::array<char, 128> buffer{};
     std::string result;
     std::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
     if (!pipe) throw std::runtime_error("popen() failed!");
@@ -43,18 +43,18 @@ std::string WindowEvents_U::execCommand(const char *cmd)
 void WindowEvents_U::logAppName(QString appName, QString windowName)
 {
     AppData *app;
-    QString additionalInfo = "";
+    QString additionalInfo = QStringLiteral("");
 
     app = WindowEvents::logAppName(appName, windowName, additionalInfo); // save app
 
-    if (appName == "firefox") {
-        windowName = windowName.replace(" - Mozilla Firefox", "");
+    if (appName == QLatin1String("firefox")) {
+        windowName = windowName.replace(QLatin1String(" - Mozilla Firefox"), QLatin1String(""));
         additionalInfo = firefoxUtils->getCurrentURLFromFirefox(windowName); // somewhat unreliable - data is usually a few seconds late into the file
-    } else if (appName == "chrome") {
+    } else if (appName == QLatin1String("chrome")) {
         additionalInfo = getCurrentURLFromChrome(windowName); // somewhat unreliable - might not get the URL
     }
 
-    if (additionalInfo != "") {
+    if (!additionalInfo.isEmpty()) {
         app->setAdditionalInfo(additionalInfo); // after we get the URL, update additionalInfo
         // this is done in this way to make sure we have correct start time of app, and to update URL later
     }

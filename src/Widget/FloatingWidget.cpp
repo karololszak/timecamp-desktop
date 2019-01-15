@@ -20,7 +20,7 @@ FloatingWidget::FloatingWidget(QWidget *parent)
     this->gripSize = QSize(16, 8);
     this->setMinimumSize(180, 20);
     this->setMaximumSize(600, 64);
-    this->setStyleSheet("background-color:green;");
+    this->setStyleSheet(QStringLiteral("background-color:green;"));
     this->hide();
     this->setMouseTracking(true); // we need this to show resize arrows
 
@@ -40,15 +40,17 @@ FloatingWidget::FloatingWidget(QWidget *parent)
     timerTextLabel = new QLabel(this);
     taskTextLabel = new ClickableLabel(this);
     startStopLabel = new ClickableLabel(this);
-    QString QLabelStyle("QLabel { color: white; }");
+    QString QLabelStyle(QStringLiteral("QLabel { color: white; }"));
     timerTextLabel->setStyleSheet(QLabelStyle);
     taskTextLabel->setStyleSheet(QLabelStyle);
     startStopLabel->setStyleSheet(QLabelStyle);
 
     startStopLabel->setScaledContents(true); // resize play/pause icon
 
-    QMetaObject::Connection conn1 = QObject::connect(taskTextLabel, &ClickableLabel::clicked,
-                                                     this, &FloatingWidget::emitTaskNameClicked);
+    QMetaObject::Connection conn1 = QObject::connect(taskTextLabel, &ClickableLabel::clicked, [this]()
+    {
+        emit taskNameClicked();
+    });
     this->setContextMenuPolicy(Qt::CustomContextMenu);
 
     QMetaObject::Connection conn2 = QObject::connect(this, &FloatingWidget::customContextMenuRequested,
@@ -61,7 +63,7 @@ FloatingWidget::FloatingWidget(QWidget *parent)
     oneSecondTimer->setTimerType(Qt::TimerType::PreciseTimer);
     QObject::connect(oneSecondTimer, &QTimer::timeout, this, &FloatingWidget::oneSecTimerTimeout);
     oneSecondTimer->start(1000);
-    updateWidgetStatus(false, "");
+    updateWidgetStatus(false, QStringLiteral(""));
 }
 
 void FloatingWidget::oneSecTimerTimeout() {
@@ -69,16 +71,12 @@ void FloatingWidget::oneSecTimerTimeout() {
         QTime time(0,0,0);
         time = time.addSecs(timerElapsed);
         if (time.hour() > 0) {
-            this->setTimerText(time.toString("H:mm:ss"));
+            this->setTimerText(time.toString(QStringLiteral("H:mm:ss")));
         } else {
-            this->setTimerText(time.toString("m:ss"));
+            this->setTimerText(time.toString(QStringLiteral("m:ss")));
         }
         timerElapsed++;
     }
-}
-
-void FloatingWidget::emitTaskNameClicked() {
-    emit taskNameClicked();
 }
 
 void FloatingWidget::updateWidgetStatus(bool canBeStopped, QString taskName) {
@@ -87,7 +85,7 @@ void FloatingWidget::updateWidgetStatus(bool canBeStopped, QString taskName) {
         startStopLabel->setPixmap(pausePixmap);
     } else {
         startStopLabel->setPixmap(playPixmap);
-        this->setTimerText(""); // set empty text (no 0:00 for timer when no task is running)
+        this->setTimerText(QStringLiteral("")); // set empty text (no 0:00 for timer when no task is running)
         taskName = FloatingWidget::NO_TASK;
         timerElapsed = 0;
     }
@@ -115,7 +113,7 @@ void FloatingWidget::handleSpacingEvents() {
 //    qInfo("Size: %d x %d", size().width(), size().height());
     if (FloatingWidgetWasInitialised) {
         this->setUpdatesEnabled(false);
-        settings.setValue("floatingWidgetGeometry", saveGeometry()); // save window position
+        settings.setValue(QStringLiteral("floatingWidgetGeometry"), saveGeometry()); // save window position
         settings.sync();
         this->setUpdatesEnabled(true);
     }
@@ -265,7 +263,7 @@ QSize FloatingWidget::sizeHint() const {
 
 void FloatingWidget::open() {
     settings.sync();
-    restoreGeometry(settings.value("floatingWidgetGeometry").toByteArray());
+    restoreGeometry(settings.value(QStringLiteral("floatingWidgetGeometry")).toByteArray());
     show();
     raise();
     setWindowState((windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);

@@ -17,16 +17,16 @@ bool WindowEvents::wasIdleLongEnoughToStopTracking()
 void WindowEvents::checkIdleStatus()
 {
     QSettings settings;
-    switchToIdleTimeAfterMS = settings.value(QString("SETT_WEB_") + QString("idletime")).toUInt() * 60 * 1000;
-    showAwayPopupAfterMS = settings.value(QString("SETT_WEB_") + QString("logofflinemin")).toUInt() * 60 * 1000;
-    shouldShowAwayPopup = settings.value(QString("SETT_WEB_") + QString("logoffline")).toBool();
+    switchToIdleTimeAfterMS = settings.value(QStringLiteral("SETT_WEB_") + QStringLiteral("idletime")).toUInt() * 60 * 1000;
+    showAwayPopupAfterMS = settings.value(QStringLiteral("SETT_WEB_") + QStringLiteral("logofflinemin")).toUInt() * 60 * 1000;
+    shouldShowAwayPopup = settings.value(QStringLiteral("SETT_WEB_") + QStringLiteral("logoffline")).toBool();
 
     lastIdleTimestamp = currentIdleTimestamp;
     bool wasPreviousIdle = lastIdleTimestamp > switchToIdleTimeAfterMS;
     bool wasIdleLongEnoughToShowAwayPopup = lastIdleTimestamp > (switchToIdleTimeAfterMS + showAwayPopupAfterMS);
 
     if (wasIdleLongEnoughToStopTracking()) {
-        WindowEvents::logAppName(ACTIVITY_IDLE_NAME, ACTIVITY_IDLE_NAME, ""); // firstly log "IDLE" app, while not being idle
+        WindowEvents::logAppName(ACTIVITY_IDLE_NAME, ACTIVITY_IDLE_NAME, QStringLiteral("")); // firstly log "IDLE" app, while not being idle
         if (!isIdle) {
             // wasn't idle, but going into idle
             qInfo() << "[IDLE] ON: going into idle mode";

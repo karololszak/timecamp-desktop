@@ -48,12 +48,12 @@ QString getCurrentURLFromChromeConfig(QByteArray &data, QString &windowTitle) {
     QString snss = QTextCodec::codecForName("UTF-16")->toUnicode(data);
 
     // remove some confusing strings
-    snss = snss.remove("\r\n");
+    snss = snss.remove(QStringLiteral("\r\n"));
     snss = snss.remove('\r');
     snss = snss.remove('\n');
 
     QString urlTitle = windowTitle;
-    urlTitle = urlTitle.replace("- Google Chrome", ""); // cut browser name
+    urlTitle = urlTitle.replace(QLatin1String("- Google Chrome"), QLatin1String("")); // cut browser name
     urlTitle = urlTitle.trimmed();
 
     // super extensive searching, removing some troublesome characters
@@ -66,32 +66,32 @@ QString getCurrentURLFromChromeConfig(QByteArray &data, QString &windowTitle) {
         urlTitle = urlTitle.trimmed();
         pos = snss.indexOf(urlTitle);
         if (pos == -1) {
-            snss = snss.remove("-");
-            snss = snss.remove("−");
-            snss = snss.remove("–");
-            snss = snss.remove("—");
-            snss = snss.remove("―");
+            snss = snss.remove(QStringLiteral("-"));
+            snss = snss.remove(QStringLiteral("−"));
+            snss = snss.remove(QStringLiteral("–"));
+            snss = snss.remove(QStringLiteral("—"));
+            snss = snss.remove(QStringLiteral("―"));
 
-            urlTitle = urlTitle.remove("-");
-            urlTitle = urlTitle.remove("−");
-            urlTitle = urlTitle.remove("–");
-            urlTitle = urlTitle.remove("—");
-            urlTitle = urlTitle.remove("―");
+            urlTitle = urlTitle.remove(QStringLiteral("-"));
+            urlTitle = urlTitle.remove(QStringLiteral("−"));
+            urlTitle = urlTitle.remove(QStringLiteral("–"));
+            urlTitle = urlTitle.remove(QStringLiteral("—"));
+            urlTitle = urlTitle.remove(QStringLiteral("―"));
             urlTitle = urlTitle.trimmed();
             pos = snss.indexOf(urlTitle);
             if (pos == -1) {
                 qInfo("[ChromeURL] Failed to find url for given title");
-                return "";
+                return QStringLiteral("");
             }
         }
     }
 
     QStringRef truncatedRef = snss.midRef(pos);
-    int urlPos = truncatedRef.indexOf("http");
+    int urlPos = truncatedRef.indexOf(QStringLiteral("http"));
 
     if (urlPos == -1) {
         qInfo("[ChromeURL] Failed to find 'http' after website name");
-        return "";
+        return QStringLiteral("");
     }
 
     // convert to latin1 - it strips most of weird unicode chars, leaves proper URI stuff
@@ -113,7 +113,7 @@ QByteArray readChromeFile(const QString &filename) {
 QString getCurrentURLFromChrome(QString windowTitle) {
     QString chromeSessionFilePath = getChromeSessionFilePath();
     QByteArray sessionContent = readChromeFile(chromeSessionFilePath);
-    QString activeURL = "";
+    QString activeURL = QStringLiteral("");
     if (!sessionContent.isEmpty()) {
         activeURL = getCurrentURLFromChromeConfig(sessionContent, windowTitle).trimmed();
     }
