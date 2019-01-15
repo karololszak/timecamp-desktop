@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    qInfo() << "OS:\t" << QSysInfo::prettyProductName() << ", " << QSysInfo::currentCpuArchitecture();
+    qInfo() << QString(APPLICATION_NAME + QStringLiteral(" ") + APPLICATION_VERSION + ", " + QSysInfo::prettyProductName() + ", " + QSysInfo::currentCpuArchitecture());
     qDebug() << "build ABI: " << QSysInfo::buildAbi();
     qInfo() << "OpenSSL @ compile:\t" << QSslSocket::sslLibraryBuildVersionNumber() << "\t| "<< QSslSocket::sslLibraryBuildVersionString();
     qInfo() << "OpenSSL @ runtime:\t"<< QSslSocket::sslLibraryVersionNumber() << "\t| " << QSslSocket::sslLibraryVersionString();
