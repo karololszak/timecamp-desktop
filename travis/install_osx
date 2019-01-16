@@ -6,11 +6,15 @@ else
 	brew upgrade cmake
 fi
 
-brew install node
-brew link --overwrite node
+# we use travis' node
+#brew install node
+#brew link --overwrite node
 echo 'export PATH="/usr/local/opt/icu4c/bin:$PATH"' >> ~/.bash_profile
 echo 'export PATH="/usr/local/opt/icu4c/sbin:$PATH"' >> ~/.bash_profile
 
+nvm install 8
+nvm use 8
+nvm alias default 8
 npm install --global create-dmg
 
 brew install tree
