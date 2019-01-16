@@ -11,6 +11,7 @@ matrix:
     env: SRC="cmake-build-relwithdebinfo" TARGET="linuxdeployqt/TimeCampDesktop.AppDir" CMAKE_NAME="TimeCampDesktop" BUNDLE_NAME="TimeCampDesktop" LinuxDeployQtExec="./linuxdeployqt-continuous-x86_64.AppImage"
   - os: osx
     compiler: clang
+    node_js: 8
     env: SRC="cmake-build-relwithdebinfo" TARGET="cmake-build-relwithdebinfo" CMAKE_NAME="TimeCampDesktop" BUNDLE_NAME="TimeCamp Desktop.app" DMG_NAME="TimeCampSetup_macOS.dmg"
 
 git:
@@ -53,7 +54,7 @@ after_script:
 deploy:
   provider: releases
   api_key: $GITHUB_TOKEN
-  file: Release-"$TRAVIS_OS_NAME".zip
+  file: Release-$TRAVIS_OS_NAME.zip
   skip_cleanup: true
   on:
     condition: $TRAVIS_OS_NAME = osx
