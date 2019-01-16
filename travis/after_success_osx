@@ -1,16 +1,27 @@
 #!/bin/sh -xe
 
-mv $SRC/"TimeCampDesktop.app" $TARGET/"TimeCamp Desktop.app"
+# add space to "app" folder so that the app on macOS is with space in name...
+mv $SRC/"TimeCampDesktop.app" $TARGET/"${BUNDLE_NAME}"
+
 
 cd $TARGET
 
-# Run QT tool to deploy
-curl -o /tmp/macdeployqtfix.py https://raw.githubusercontent.com/aurelien-rainone/macdeployqtfix/master/macdeployqtfix.py
+# get a tool that fixes RPATHs
+curl -o /tmp/macdeployqtfix.py https://raw.githubusercontent.com/arl/macdeployqtfix/master/macdeployqtfix.py
 
-macdeployqt "${BUNDLE_NAME}" -dmg
+# -dmg switch creates a DMG but it's a weird one - we removed the switch
+macdeployqt "${BUNDLE_NAME}"
 
-python /tmp/macdeployqtfix.py $TARGET/"TimeCamp Desktop.app" /usr/local/Cellar/qt/$HOMEBREW_QT5_VERSION/
+# use the fixer
+python /tmp/macdeployqtfix.py "${BUNDLE_NAME}" /usr/local/Cellar/qt/$HOMEBREW_QT5_VERSION/
 
+# this will create a drag-n-drop dmg, but with a weird name
+create-dmg "${BUNDLE_NAME}"
+
+# first name is the "weird" output of create-dmg
+mv "TimeCamp Desktop 2.1.dmg"  ${DMG_NAME}
+
+# go back? just to be sure...
 cd ..
 
-zip -r Release-"$TRAVIS_OS_NAME".zip $TARGET
+#zip -r Release-"$TRAVIS_OS_NAME".zip $TARGET
