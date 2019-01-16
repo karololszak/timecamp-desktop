@@ -6,7 +6,8 @@ matrix:
     dist: trusty
     sudo: required
     compiler: gcc
-    cache: ccache
+#    cache: ccache #
+    # we will revisit ccache later, for now it breaks our builds somehow
     env: SRC="cmake-build-relwithdebinfo" TARGET="linuxdeployqt/TimeCampDesktop.AppDir" CMAKE_NAME="TimeCampDesktop" BUNDLE_NAME="TimeCampDesktop" LinuxDeployQtExec="./linuxdeployqt-continuous-x86_64.AppImage"
   - os: osx
     compiler: clang
