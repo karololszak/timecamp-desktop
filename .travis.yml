@@ -49,13 +49,13 @@ after_success:
 after_script:
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source ./travis/after_script_linux ; fi
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source ./travis/after_script_osx ; fi
-- zip $TARGET
+- zip -r Release-"$TRAVIS_OS_NAME".zip $TARGET
 
 deploy:
   provider: releases
   api_key: $GITHUB_TOKEN
-  file: $TARGET.zip
+  file: Release-"$TRAVIS_OS_NAME".zip
   skip_cleanup: true
   on:
-    condition: $TRAVIS_OS_NAME = osx
+#    condition: $TRAVIS_OS_NAME = osx
     tags: true

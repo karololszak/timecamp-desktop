@@ -2,7 +2,7 @@
 
 if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then
     cp $SRC/"${CMAKE_NAME}" $TARGET"/usr/bin/""${BUNDLE_NAME}" # copy the binary
-    cp $QTDIR/qtdiag $TARGET"/usr/bin/qtdiag"
+    cp $QTDIR/bin/qtdiag $TARGET"/usr/bin/qtdiag"
     cp res"/${BUNDLE_NAME}.desktop" $TARGET"/usr/share/applications/${BUNDLE_NAME}.desktop" # copy app.desktop file
     cp "res/AppIcon_16.png" $TARGET"/usr/share/icons/hicolor/16x16/${BUNDLE_NAME}.png"
     cp "res/AppIcon_32.png" $TARGET"/usr/share/icons/hicolor/32x32/${BUNDLE_NAME}.png"
