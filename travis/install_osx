@@ -13,7 +13,8 @@
 echo 'export PATH="/usr/local/opt/icu4c/bin:$PATH"' >> ~/.bash_profile
 echo 'export PATH="/usr/local/opt/icu4c/sbin:$PATH"' >> ~/.bash_profile
 
-nvm install 8
+# node 8 should be selected by travis, no need to install it, hopefully
+#nvm install 8
 nvm use 8
 nvm alias default 8
 npm install --global create-dmg
