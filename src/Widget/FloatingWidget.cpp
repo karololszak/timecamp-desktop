@@ -281,14 +281,14 @@ bool FloatingWidget::isHidden() {
     return !this->isVisible();
 }
 
-void FloatingWidget::setTimerText(QString text) {
+void FloatingWidget::setTimerText(const QString text) {
     if(text != this->timerText) { // call update only when text actually changed
         this->timerText = text;
         this->update();
     }
 }
 
-void FloatingWidget::setTaskText(QString text) {
+void FloatingWidget::setTaskText(const QString text) {
     if(text != this->taskText) { // call update only when text actually changed
         this->taskText = text;
         this->update();
@@ -299,7 +299,7 @@ void FloatingWidget::setMenu(QMenu *contextMenu) {
     FloatingWidget::contextMenu = contextMenu;
 }
 
-void FloatingWidget::setIcon(QString iconPath) {
+void FloatingWidget::setIcon(const QString iconPath) {
     // FloatingWidget has no icon for now
     // if it had, it would be in the left corner
 }

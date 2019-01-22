@@ -163,13 +163,13 @@ QString FirefoxUtils::parseJsonlz4RecoveryFilePath(const QString &recoveryFilePa
 QString FirefoxUtils::getFirefoxConfigFilePath()
 {
 #ifdef Q_OS_LINUX
-    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::HomeLocation).first();
+    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::HomeLocation).constFirst();
     QString firefoxPath = homeDir + "/.mozilla/firefox";
 #elif defined(Q_OS_WIN)
-    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::HomeLocation).first();
+    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::HomeLocation).constFirst();
     QString firefoxPath = homeDir + "/AppData/Roaming/Mozilla/Firefox/Profiles";
 #else
-    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation).first();
+    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation).constFirst();
     QString firefoxPath = homeDir + "/Firefox/Profiles";
 #endif
 
@@ -237,7 +237,7 @@ QString FirefoxUtils::getFirefoxConfigFilePath()
     return sessionFilesVector.front().first;
 }
 
-QString FirefoxUtils::getCurrentURLFromFirefoxConfig(QString &jsonConfig, QString windowName)
+QString FirefoxUtils::getCurrentURLFromFirefoxConfig(const QString &jsonConfig, const QString &windowName)
 {
 
     QJsonParseError error{};
@@ -320,7 +320,7 @@ QString FirefoxUtils::getCurrentURLFromFirefoxConfig(QString &jsonConfig, QStrin
     return finalUrl;
 }
 
-QString FirefoxUtils::getCurrentURLFromFirefox(QString windowName)
+QString FirefoxUtils::getCurrentURLFromFirefox(const QString windowName)
 {
     QString content;
     activeUrl.clear();

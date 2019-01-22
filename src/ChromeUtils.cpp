@@ -16,11 +16,11 @@
 
 QString getChromeSessionFilePath() {
 #ifdef Q_OS_LINUX
-    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::HomeLocation).first();
+    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::HomeLocation).constFirst();
 #elif defined(Q_OS_WIN)
-    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::HomeLocation).first();
+    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::HomeLocation).constFirst();
 #else
-    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation).first();
+    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation).constFirst();
 #endif
 
     QString currentSessionPath = homeDir + "/.config/google-chrome/Default/Current Session";
@@ -30,11 +30,11 @@ QString getChromeSessionFilePath() {
 
 QString getChromeTabsFilePath() {
 #ifdef Q_OS_LINUX
-    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::HomeLocation).first();
+    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::HomeLocation).constFirst();
 #elif defined(Q_OS_WIN)
-    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::HomeLocation).first();
+    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::HomeLocation).constFirst();
 #else
-    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation).first();
+    QString homeDir = QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation).constFirst();
 #endif
 
     QString currentTabsPath = homeDir + "/.config/google-chrome/Default/Current Tabs";
@@ -42,7 +42,7 @@ QString getChromeTabsFilePath() {
     return currentTabsPath;
 }
 
-QString getCurrentURLFromChromeConfig(QByteArray &data, QString &windowTitle) {
+QString getCurrentURLFromChromeConfig(const QByteArray &data, const QString &windowTitle) {
 
     // try to read data the best way possible
     QString snss = QTextCodec::codecForName("UTF-16")->toUnicode(data);
@@ -110,7 +110,7 @@ QByteArray readChromeFile(const QString &filename) {
     return blob;
 }
 
-QString getCurrentURLFromChrome(QString windowTitle) {
+QString getCurrentURLFromChrome(const QString windowTitle) {
     QString chromeSessionFilePath = getChromeSessionFilePath();
     QByteArray sessionContent = readChromeFile(chromeSessionFilePath);
     QString activeURL = QStringLiteral("");

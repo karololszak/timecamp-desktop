@@ -43,7 +43,8 @@ public:
     QJsonDocument LastTasksCache;
 
 signals:
-    void pageStatusChanged(bool, QString);
+    void pageStatusChanged(bool);
+    void pageTitleChanged(QString);
     void checkIsIdle();
     void windowStatusChanged(bool);
     void lastTasksChanged();
@@ -72,8 +73,8 @@ public slots:
     void handleLoadProgress(int);
     void handleLoadFinished(bool);
     void goToAwayPage();
-    void refreshTimerStatus();
-    void shouldRefreshTimerStatus(bool, QString);
+    void triggerTimerStatusFetchAsync();
+    void getCurrentWebTimerStatusEmitted();
     void downloadRequested(QWebEngineDownloadItem* download);
     void setDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
     void downloadFinished();
@@ -92,8 +93,8 @@ private:
     void runJSinPage(QString js);
     void forceLoadUrl(QString url);
     void showTaskPicker();
-    void checkIsTimerRunning();
     void fetchRecentTasks();
+    void checkAPIkey();
     void fetchAPIkey();
     bool checkIfOnTimerPage();
     void goToTimerPage();
@@ -107,7 +108,8 @@ private:
 
     bool MainWidgetWasInitialised = false;
     bool loggedIn;
-
+private:
+    void setLoggedIn(bool loggedIn);
     void setApiKey(const QString &apiKey);
 
     QTaskbarControl *taskbar;

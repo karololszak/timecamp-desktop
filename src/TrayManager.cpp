@@ -37,7 +37,7 @@ void TrayManager::setupTray(MainWidget *parent) {
     // Unbind "tray icon activates window"
      https://trello.com/c/qyCrTMfy/39-tray-kliknięcie-niech-zawsze-pokazuje-menu-otwieramy-przez-open-z-tego-menu
 
-    connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
+    QObject::connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
             this, SLOT(iconActivated(QSystemTrayIcon::ActivationReason)));
     */
     trayIcon->setIcon(QIcon(MAIN_ICON));
@@ -89,15 +89,17 @@ void TrayManager::updateRecentTasks() {
     this->assignActions(trayMenu);
 }
 
-void TrayManager::updateStopMenu(bool canBeStopped, QString timerName) {
+void TrayManager::updateStopMenu(bool canBeStopped, const QString timerName) {
+//    qInfo() << "STOP MENU: " + QString::number(canBeStopped) + " (" + timerName + ")";
+    QString stoppableTask = timerName;
     if (!canBeStopped) {
-        timerName = TrayManager::STOP_TIMER;
+        stoppableTask = TrayManager::STOP_TIMER;
     } else {
         QFont x = QFont();
         QFontMetrics metrics(x);
-        timerName = QString(TrayManager::STOP_PREFIX) + metrics.elidedText(timerName, Qt::ElideRight, menuWidth);
+        stoppableTask = QString(TrayManager::STOP_PREFIX) + metrics.elidedText(timerName, Qt::ElideRight, menuWidth);
     }
-    stopTaskAct->setText(timerName);
+    stopTaskAct->setText(stoppableTask);
     stopTaskAct->setEnabled(canBeStopped);
 }
 
@@ -157,8 +159,8 @@ void TrayManager::createActions(QMenu *menu) {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
     openAct->setShortcutVisibleInContextMenu(true);
 #endif
-//    connect(openAct, &QAction::triggered, mainWidget, &MainWidget::open);
-    connect(openAct, &QAction::triggered, this, &TrayManager::openCloseWindowAction);
+//    QObject::connect(openAct, &QAction::triggered, mainWidget, &MainWidget::open);
+    QObject::connect(openAct, &QAction::triggered, this, &TrayManager::openCloseWindowAction);
 
     recentTasksTitleAct = new QAction(tr("Start recent task: "), this);
     recentTasksTitleAct->setEnabled(false);
@@ -170,8 +172,9 @@ void TrayManager::createActions(QMenu *menu) {
     startTaskAct->setShortcutVisibleInContextMenu(true);
 #endif
     startTaskAct->setShortcutContext(Qt::ApplicationShortcut);
-    connect(startTaskAct, &QAction::triggered, this, [this]()
+    QObject::connect(startTaskAct, &QAction::triggered, this, [this]()
     {
+        qDebug() << "Start Timer clicked";
         emit startTaskClicked();
     });
 
@@ -182,29 +185,30 @@ void TrayManager::createActions(QMenu *menu) {
     stopTaskAct->setShortcutVisibleInContextMenu(true);
 #endif
     stopTaskAct->setShortcutContext(Qt::ApplicationShortcut);
-    connect(stopTaskAct, &QAction::triggered, this, [this]()
+    QObject::connect(stopTaskAct, &QAction::triggered, this, [this]()
     {
+        qDebug() << "Stop Timer clicked";
         emit stopTaskClicked();
     });
 
     trackerAct = new QAction(tr("Track computer activities"), this);
     trackerAct->setCheckable(true);
-    connect(trackerAct, &QAction::triggered, this, &TrayManager::tracker);
+    QObject::connect(trackerAct, &QAction::triggered, this, &TrayManager::tracker);
 
     autoTrackingAct = new QAction(tr("Automatic task switching"), this);
     autoTrackingAct->setCheckable(true);
-    connect(autoTrackingAct, &QAction::triggered, this, &TrayManager::autoTracking);
+    QObject::connect(autoTrackingAct, &QAction::triggered, this, &TrayManager::autoTracking);
 
 #ifdef _WIDGET_EXISTS_
     widgetAct = new QAction(tr("Time widget"), this);
     widgetAct->setCheckable(true);
-    connect(widgetAct, &QAction::triggered, this, &TrayManager::widgetToggl);
+    QObject::connect(widgetAct, &QAction::triggered, this, &TrayManager::widgetToggl);
 #endif
 
     autoStartAct = new QAction(tr("Start with computer"), this);
     autoStartAct->setDisabled(true); // disable by default, till we login
     autoStartAct->setCheckable(true);
-    connect(autoStartAct, &QAction::triggered, this, &TrayManager::autoStart);
+    QObject::connect(autoStartAct, &QAction::triggered, this, &TrayManager::autoStart);
 
     QObject::connect(Autorun::instance().getAutostart(), &QAutoStart::autoStartEnabledChanged,
                      autoStartAct, &QAction::setChecked);
@@ -214,13 +218,13 @@ void TrayManager::createActions(QMenu *menu) {
 
     helpAct = new QAction(tr("Help && support"), this);
     helpAct->setStatusTip(tr("Need help? Talk to one of our support gurus"));
-    connect(helpAct, &QAction::triggered, this, &TrayManager::contactSupport);
+    QObject::connect(helpAct, &QAction::triggered, this, &TrayManager::contactSupport);
 
     quitAct = new QAction(tr("Quit"), this);
     quitAct->setStatusTip(tr("Close the app"));
-    connect(quitAct, &QAction::triggered, mainWidget, &MainWidget::quit);
+    QObject::connect(quitAct, &QAction::triggered, mainWidget, &MainWidget::quit);
 
-    connect(menu, &QMenu::triggered, this, &TrayManager::menuActionHandler);
+    QObject::connect(menu, &QMenu::triggered, this, &TrayManager::menuActionHandler);
 }
 
 void TrayManager::menuActionHandler(QAction *action) {
@@ -229,6 +233,7 @@ void TrayManager::menuActionHandler(QAction *action) {
     if (wasOK) {
         emit taskSelected(taskID, true);
     }
+    qInfo() << action->text() + " - was clicked";
 }
 
 void TrayManager::assignActions(QMenu *menu) {
@@ -309,16 +314,18 @@ void TrayManager::updateWidget(bool loggedIn) {
 #endif
 }
 
-void TrayManager::loginLogout(bool isLoggedIn, QString tooltipText) {
+void TrayManager::updateTooltip(QString tooltipText) {
+#ifndef Q_OS_MACOS
+    trayIcon->setToolTip(tooltipText); // we don't use trayIcon on macOS
+#endif
+}
+void TrayManager::loginLogout(bool isLoggedIn) {
 //    qDebug() << "[Browser] Page changed; update whether logged in or not";
 
     this->updateWidget(isLoggedIn);
     startTaskAct->setEnabled(isLoggedIn);
     trackerAct->setEnabled(isLoggedIn);
     autoTrackingAct->setEnabled(isLoggedIn);
-#ifndef Q_OS_MACOS
-    trayIcon->setToolTip(tooltipText); // we don't use trayIcon on macOS
-#endif
 
     if (isLoggedIn) {
         if (!wasLoggedIn) {

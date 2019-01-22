@@ -45,7 +45,7 @@ public slots:
      * @return true - person added successfully, false - person not added
      */
     bool saveAppToDb(AppData *app);
-    void loginLogout(bool isLoggedIn, QString pageTitle);
+    void loginLogout(bool isLoggedIn);
 
 private:
     explicit DbManager(QObject *parent = nullptr);
