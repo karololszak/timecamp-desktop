@@ -39,6 +39,7 @@ before_install:
 - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
 - git submodule sync
 - git submodule update --init --recursive
+- git submodule update --recursive --remote
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source ./travis/before_install_linux ; fi
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source ./travis/before_install_osx ; fi
 
