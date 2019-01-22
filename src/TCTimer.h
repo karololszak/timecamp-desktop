@@ -34,6 +34,7 @@ public:
 signals:
     void timerStatusChanged(bool, QString);
     void timerElapsedSeconds(qint64);
+    void askForWebTimerUpdate();
 
 public slots:
     void startTaskByTaskObj(Task *task, bool force);

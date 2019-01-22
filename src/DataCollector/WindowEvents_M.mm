@@ -74,8 +74,8 @@ void WindowEvents_M::run()
     firefoxUtils = new FirefoxUtils();
 
 //    QTimer *timer = new QTimer();
-//    connect(timer, SIGNAL(timeout()), this, SLOT(GetActiveApp()));
-//    connect(timer, &QTimer::timeout, this, &WindowEvents_M::GetActiveApp);
+//    QObject::connect(timer, SIGNAL(timeout()), this, SLOT(GetActiveApp()));
+//    QObject::connect(timer, &QTimer::timeout, this, &WindowEvents_M::GetActiveApp);
 //    timer->start(2*1000);
 
 //    timer->stop();

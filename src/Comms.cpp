@@ -25,7 +25,7 @@ Comms::Comms(QObject *parent) : QObject(parent)
 {
     qnam.setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
     
-    apiHelper = new ApiHelper(API_URL);
+    apiHelper = new ApiHelper(QStringLiteral(API_URL));
 
     lastTimerStatusCheck = QDateTime::currentMSecsSinceEpoch();
     // connect the callback function
@@ -129,12 +129,13 @@ void Comms::reportApp(AppData *app)
             return;
         }
 
-        qDebug("[DBSAVE] %llds - %s | %s\nADD_INFO: %s \n",
-               (lastApp->getEnd() - lastApp->getStart()) / 1000,
-               lastApp->getAppName().toLatin1().constData(),
-               lastApp->getWindowName().toLatin1().constData(),
-               lastApp->getAdditionalInfo().toLatin1().constData()
-        );
+        qDebug() <<QString("[DBSAVE] %1s - %2 | %3")
+            .arg((lastApp->getEnd() - lastApp->getStart()) / 1000)
+            .arg(lastApp->getAppName())
+            .arg(lastApp->getWindowName());
+        if(!lastApp->getAdditionalInfo().isEmpty()){
+            qDebug() << QString("ADD_INFO: %1").arg(lastApp->getAdditionalInfo());
+        }
 
         app->setStart(now); // saved OK, so new App starts "NOW"
     } else {
@@ -283,9 +284,10 @@ void Comms::userInfoReply(QByteArray buffer)
     settings.setValue(SETT_ROOT_GROUP_ID, root_group_id);
     settings.setValue(SETT_PRIMARY_GROUP_ID, primary_group_id);
     settings.sync();
-    qDebug() << "SETT user_id: " << settings.value(SETT_USER_ID).toInt();
-    qDebug() << "SETT root_group_id: " << settings.value(SETT_ROOT_GROUP_ID).toInt();
-    qDebug() << "SETT primary_group_id: " << settings.value(SETT_PRIMARY_GROUP_ID).toInt();
+    // too verbose; better to get the whole buffer
+//    qDebug() << "SETT user_id: " << settings.value(SETT_USER_ID).toInt();
+//    qDebug() << "SETT root_group_id: " << settings.value(SETT_ROOT_GROUP_ID).toInt();
+//    qDebug() << "SETT primary_group_id: " << settings.value(SETT_PRIMARY_GROUP_ID).toInt();
 }
 
 void Comms::getSettings()
@@ -352,13 +354,14 @@ void Comms::settingsReply(QByteArray buffer)
     }
     settings.sync();
 
-    qDebug() << "SETT idletime: " << settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("idletime")).toInt();
-    qDebug() << "SETT logoffline: " << settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("logoffline")).toBool();
-    qDebug() << "SETT logofflinemin: " << settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("logofflinemin")).toInt();
-    qDebug() << "SETT dontCollectComputerActivity: "
-            << settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("dontCollectComputerActivity")).toBool();
-    qDebug() << "SETT collectWindowTitles: "
-            << settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("collectWindowTitles")).toBool();
+    // too verbose; better to get the whole buffer
+//    qDebug() << "SETT idletime: " << settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("idletime")).toInt();
+//    qDebug() << "SETT logoffline: " << settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("logoffline")).toBool();
+//    qDebug() << "SETT logofflinemin: " << settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("logofflinemin")).toInt();
+//    qDebug() << "SETT dontCollectComputerActivity: "
+//            << settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("dontCollectComputerActivity")).toBool();
+//    qDebug() << "SETT collectWindowTitles: "
+//            << settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("collectWindowTitles")).toBool();
 }
 
 void Comms::getTasks()
@@ -396,7 +399,7 @@ void Comms::genericReply(QNetworkReply *reply)
         qWarning() << "Network error: " << reply->errorString();
         qWarning() << "URL: " << reply->url();
         qWarning() << "TYPE: " << reply->operation();
-        qWarning() << "Response: " << buffer;
+        qWarning() << "Response: \n" << buffer;
         return;
     } else {
         qDebug() << "Network success";
@@ -430,10 +433,10 @@ void Comms::netRequest(QNetworkRequest request, QNetworkAccessManager::Operation
 
     // make the actual request
     if(netOp == QNetworkAccessManager::GetOperation) {
-        qDebug() << "[GET] URL: " << requestUrl;
+        qDebug() << "[GET] URL: " << requestUrl.replace(QLatin1String(API_URL), QLatin1String(""));
         reply = qnam.get(request);
     }else if(netOp == QNetworkAccessManager::PostOperation) {
-        qDebug() << "[POST] URL: " << requestUrl;
+        qDebug() << "[POST] URL: " << requestUrl.replace(QLatin1String(API_URL), QLatin1String(""));
         reply = qnam.post(request, data);
         data.truncate(MAX_LOG_TEXT_LENGTH);
         qDebug() << "[POST] Data: " << data;
@@ -443,7 +446,7 @@ void Comms::netRequest(QNetworkRequest request, QNetworkAccessManager::Operation
     // processing is done in the "callback" function (conn1) via async
     if(reply != nullptr) {
         QEventLoop loop;
-        connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+        QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
         loop.exec(); // wait in this function till we get a Network Reply; callback from conn1 gets called in async manner
 
         reply->deleteLater();
@@ -468,6 +471,7 @@ void Comms::postRequest(QUrl endpointUrl, QUrlQuery params)
 
 void Comms::timerStart(qint64 taskID, qint64 entryID, qint64 startedAtInMS)
 {
+    qDebug() << "[API] Timer START Request";
     QUrlQuery params = apiHelper->getDefaultApiParams();
     params.addQueryItem(QStringLiteral("action"), QStringLiteral("start"));
     if (taskID > 0) {
@@ -484,6 +488,7 @@ void Comms::timerStart(qint64 taskID, qint64 entryID, qint64 startedAtInMS)
 
 void Comms::timerStop(qint64 timerID, qint64 stoppedAtInMS)
 {
+    qDebug() << "[API] Timer STOP Request";
     QUrlQuery params = apiHelper->getDefaultApiParams();
     params.addQueryItem(QStringLiteral("action"), QStringLiteral("stop"));
     if (timerID > 0) {
@@ -497,6 +502,7 @@ void Comms::timerStop(qint64 timerID, qint64 stoppedAtInMS)
 
 void Comms::timerStatus()
 {
+    qDebug() << "[API] Timer STATUS Request";
     qint64 now = QDateTime::currentMSecsSinceEpoch();
     if (lastTimerStatusCheck - now < 1000) { // if called less than a second ago; prevents a check-spam
         return;

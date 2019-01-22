@@ -2,7 +2,7 @@
 set (VERSION_MAJOR 2)
 set (VERSION_MINOR 1)
 set (VERSION_REVISION 3)
-set (VERSION_BUILD 1)
+set (VERSION_BUILD 2)
 
 set(PRODUCT_NAME "TimeCamp Desktop") # the nice visible name
 set(COMPANY "TimeCamp SA")

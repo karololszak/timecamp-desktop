@@ -1,3 +1,8 @@
+environment:
+  global:
+    OPENSSL_VERSION: 1.0.2q
+# ^this is used for the INDY fulgan downloads
+
 version: 2.0.{build}
 image: Visual Studio 2017
 
@@ -21,21 +26,29 @@ before_build:
   - md Release
 
 build_script:
+  - appveyor DownloadFile https://indy.fulgan.com/SSL/openssl-%OPENSSL_VERSION%-x64_86-win64.zip -FileName openssl.zip
+  - 7z x openssl.zip -y
   - cd Output
   - cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -G "Ninja" "../"
   - cd ../
   - cmake --build Output --target TimeCampDesktop -- -j 2
 
 after_build:
-  - copy "Output\TimeCampDesktop.exe" "Release\TimeCampDesktop.exe"
-  - copy "src\localdb.sqlite" "Release\localdb.sqlite"
-  - windeployqt --release --no-translations Release\TimeCampDesktop.exe
-  - copy C:\OpenSSL-Win64\bin\libeay32.dll "Release\libeay32.dll"
-  - copy C:\OpenSSL-Win64\bin\ssleay32.dll "Release\ssleay32.dll"
-  - copy "%QTDIR%\bin\qtdiag.exe" "Release\qtdiag.exe"
+  - copy /B "Output\TimeCampDesktop.exe" "Release\TimeCampDesktop.exe"
+  - copy /B "src\localdb.sqlite" "Release\localdb.sqlite"
+  - windeployqt --release --compiler-runtime Release\TimeCampDesktop.exe
+# copy OpenSSL builds from AppVeyor first
+  - copy /B C:\OpenSSL-Win64\bin\libeay32.dll "Release\libeay32.dll"
+  - copy /B C:\OpenSSL-Win64\bin\ssleay32.dll "Release\ssleay32.dll"
+# if we successfully downloaded OpenSSL from INDY, then copy them
+  - copy /B /Y libeay32.dll "Release\libeay32.dll"
+  - copy /B /Y ssleay32.dll "Release\ssleay32.dll"
+# throw in QtDiag
+  - copy /B "%QTDIR%\bin\qtdiag.exe" "Release\qtdiag.exe"
 
 artifacts:
   - path: Release
+    name: TimeCampDesktop-$(APPVEYOR_BUILD_VERSION)
     type: zip
 
 
@@ -43,7 +56,7 @@ deploy:
   provider: GitHub
   auth_token:
     secure: 7JiH2SZC0UFwSfd8YsMNcHqENkyCDKSJ5y9TSbIOBbuuClgFnfBdId+5vjysJbjv
-  artifact: Release.zip
+  artifact: TimeCampDesktop-$(APPVEYOR_BUILD_VERSION).zip
   draft: false
   prerelease: true
   on:

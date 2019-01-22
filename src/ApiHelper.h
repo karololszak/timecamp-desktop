@@ -17,7 +17,6 @@ public:
     QUrl getApiUrl(QString endpoint, QString format = QLatin1String(""));
     QUrlQuery getDefaultApiParams();
     bool updateApiKeyFromSettings();
-    void setApiKey(const QString &apiKey);
     QUrl timerUrl();
     QUrl userInfoUrl();
     QUrl tasksUrl();
