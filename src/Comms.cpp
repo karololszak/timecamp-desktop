@@ -90,7 +90,7 @@ void Comms::appChanged(AppData *app)
     emit announceAppChange(app);
 
     if (lastApp == nullptr) {
-        qDebug() << "[FIRST APP DETECTED]";
+        qInfo() << "[FIRST APP DETECTED]";
         qint64 now = QDateTime::currentMSecsSinceEpoch();
         lastApp = app;
         app->setStart(now);
@@ -202,12 +202,12 @@ void Comms::sendAppData(const QVector<AppData> *appList)
                     params.addQueryItem(base_str + QStringLiteral("[website_domain]"), app.getDomainFromAdditionalInfo());
                 }
             } else {
-                params.addQueryItem(base_str + QStringLiteral("[window_title]"), QStringLiteral(""));
+                params.addQueryItem(base_str + QStringLiteral("[window_title]"), QString());
             }
 
         } else { // can't send activity info, collect_computer_activities == 0
             params.addQueryItem(base_str + QStringLiteral("[application_name]"), SETT_HIDDEN_COMPUTER_ACTIVITIES_CONST_NAME);
-            params.addQueryItem(base_str + QStringLiteral("[window_title]"), QStringLiteral(""));
+            params.addQueryItem(base_str + QStringLiteral("[window_title]"), QString());
         }
 
         QString start_time = Formatting::DateTimeTC(app.getStart());
@@ -299,35 +299,37 @@ void Comms::getSettings()
 
     QUrlQuery params = apiHelper->getDefaultApiParams();
 
+    QString paramName = QStringLiteral("name[]");
+
     // dapp settings
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("close_agent")); // bool: can close app?
+    params.addQueryItem(paramName, QStringLiteral("close_agent")); // bool: can close app?
 
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("pause_tracking")); // int: can have "Private Time"? if so, then X limit
+    params.addQueryItem(paramName, QStringLiteral("pause_tracking")); // int: can have "Private Time"? if so, then X limit
 
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("idletime")); // int: how quick app goes into idle
+    params.addQueryItem(paramName, QStringLiteral("idletime")); // int: how quick app goes into idle
 
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("logoffline")); // bool: show "away popup"?
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("logofflinemin")); // int: after how much of idle we start showing "away popup"
+    params.addQueryItem(paramName, QStringLiteral("logoffline")); // bool: show "away popup"?
+    params.addQueryItem(paramName, QStringLiteral("logofflinemin")); // int: after how much of idle we start showing "away popup"
 
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("offlineallow")); // // bool: is the offlinecustom Array set
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("offlinecustom")); // Array(String): names of activities for "away popup"
+    params.addQueryItem(paramName, QStringLiteral("offlineallow")); // // bool: is the offlinecustom Array set
+    params.addQueryItem(paramName, QStringLiteral("offlinecustom")); // Array(String): names of activities for "away popup"
 
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("dontCollectComputerActivity")); // bool: BOOL_COLLECT_COMPUTER_ACTIVITIES if true, send only "computer activity"
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("collectWindowTitles")); // bool: save windowTitles?
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("logOnlyActivitiesWithTasks")); // bool: tracking only when task selected
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("make_screenshots")); // bool: take screenshots?
+    params.addQueryItem(paramName, QStringLiteral("dontCollectComputerActivity")); // bool: BOOL_COLLECT_COMPUTER_ACTIVITIES if true, send only "computer activity"
+    params.addQueryItem(paramName, QStringLiteral("collectWindowTitles")); // bool: save windowTitles?
+    params.addQueryItem(paramName, QStringLiteral("logOnlyActivitiesWithTasks")); // bool: tracking only when task selected
+    params.addQueryItem(paramName, QStringLiteral("make_screenshots")); // bool: take screenshots?
 
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("group_working_time_limit")); // Array(int): stop tracking after "daily hours limit"
+    params.addQueryItem(paramName, QStringLiteral("group_working_time_limit")); // Array(int): stop tracking after "daily hours limit"
 
     // auto mode:
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("tt_window_on_no_task")); // bool: "Display a window to choose a task, when Agent can't match any keyword in Auto Mode"
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("turnoff_tt_after")); // int: auto tracking off, after X
+    params.addQueryItem(paramName, QStringLiteral("tt_window_on_no_task")); // bool: "Display a window to choose a task, when Agent can't match any keyword in Auto Mode"
+    params.addQueryItem(paramName, QStringLiteral("turnoff_tt_after")); // int: auto tracking off, after X
 
     // probably server only:
-//    params.addQueryItem("name[]", "form_scheduler"); // bool: "Allow users to log overtime activities"
-//    params.addQueryItem("name[]", "unset_concurrent_apps"); // bool: "Dismiss computer activities overlapping other computer activities that are already logged"
-//    params.addQueryItem("name[]", "limited_offline"); // bool: "Do not allow adding away time activity before first and after last activity on a computer"
-//    params.addQueryItem("name[]", "disableDataSplit"); // bool: "can users split their away time breaks"
+//    params.addQueryItem(paramName, "form_scheduler"); // bool: "Allow users to log overtime activities"
+//    params.addQueryItem(paramName, "unset_concurrent_apps"); // bool: "Dismiss computer activities overlapping other computer activities that are already logged"
+//    params.addQueryItem(paramName, "limited_offline"); // bool: "Do not allow adding away time activity before first and after last activity on a computer"
+//    params.addQueryItem(paramName, "disableDataSplit"); // bool: "can users split their away time breaks"
 
 
     groupSettingsUrl.setQuery(params.query());

@@ -51,6 +51,8 @@ if (WIN32)
     elseif ("${CMAKE_GENERATOR}" MATCHES "Visual Studio" OR "${CMAKE_GENERATOR}" MATCHES "NMake" OR "${CMAKE_GENERATOR}" MATCHES "Ninja")
         LIST(APPEND CMAKE_PREFIX_PATH "C:\\WinDDK\\7600.16385.1\\lib\\win7\\i386")
     endif ()
+elseif (UNIX AND NOT APPLE)
+    set(CMAKE_EXE_LINKER_FLAGS "-rdynamic")
 elseif (APPLE)
     set(CMAKE_EXE_LINKER_FLAGS "-framework Carbon -framework AppKit -framework IOKit -framework Foundation -framework CoreFoundation")
 # -syslibroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk

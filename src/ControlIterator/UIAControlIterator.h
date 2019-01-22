@@ -15,7 +15,6 @@ public:
     long getRole();
     std::wstring getName();
     std::wstring getValue();
-
 };
 
 class UIAControlIterator : public IConttrolIterator

@@ -26,7 +26,7 @@ void WindowEvents::checkIdleStatus()
     bool wasIdleLongEnoughToShowAwayPopup = lastIdleTimestamp > (switchToIdleTimeAfterMS + showAwayPopupAfterMS);
 
     if (wasIdleLongEnoughToStopTracking()) {
-        WindowEvents::logAppName(ACTIVITY_IDLE_NAME, ACTIVITY_IDLE_NAME, QStringLiteral("")); // firstly log "IDLE" app, while not being idle
+        WindowEvents::logAppName(ACTIVITY_IDLE_NAME, ACTIVITY_IDLE_NAME, QString()); // firstly log "IDLE" app, while not being idle
         if (!isIdle) {
             // wasn't idle, but going into idle
             qInfo() << "[IDLE] ON: going into idle mode";

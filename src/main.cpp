@@ -43,7 +43,6 @@ void firstRun()
 
 int main(int argc, char *argv[])
 {
-
     // Caches are saved in %localappdata%/org_name/APPLICATION_NAME
     // Eg. C:\Users\timecamp\AppData\Local\TimeCamp SA\TimeCamp Desktop
     // Settings are saved in registry: HKEY_CURRENT_USER\Software\TimeCamp SA\TimeCamp Desktop

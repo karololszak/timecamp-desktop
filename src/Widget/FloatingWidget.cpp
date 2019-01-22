@@ -63,7 +63,7 @@ FloatingWidget::FloatingWidget(QWidget *parent)
     oneSecondTimer->setTimerType(Qt::TimerType::PreciseTimer);
     QObject::connect(oneSecondTimer, &QTimer::timeout, this, &FloatingWidget::oneSecTimerTimeout);
     oneSecondTimer->start(1000);
-    updateWidgetStatus(false, QStringLiteral(""));
+    updateWidgetStatus(false, QString());
 }
 
 void FloatingWidget::oneSecTimerTimeout() {
@@ -85,7 +85,7 @@ void FloatingWidget::updateWidgetStatus(bool canBeStopped, QString taskName) {
         startStopLabel->setPixmap(pausePixmap);
     } else {
         startStopLabel->setPixmap(playPixmap);
-        this->setTimerText(QStringLiteral("")); // set empty text (no 0:00 for timer when no task is running)
+        this->setTimerText(QString()); // set empty text (no 0:00 for timer when no task is running)
         taskName = FloatingWidget::NO_TASK;
         timerElapsed = 0;
     }

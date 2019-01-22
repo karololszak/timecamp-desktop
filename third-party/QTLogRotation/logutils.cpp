@@ -15,6 +15,7 @@
 namespace LOGUTILS {
     static QString logFileName;
     static QString logFolderName;
+    static QString lineEndings;
     QString lastMessage;
     qint64 sameMessageCount = 0;
 
@@ -57,6 +58,27 @@ namespace LOGUTILS {
 
         deleteOldLogs(); //delete old log files
         initLogFileName(); //create the logfile name
+#ifdef Q_OS_WIN
+        lineEndings = QStringLiteral("\r\n");
+#else   
+        lineEndings = QStringLiteral("\n");
+#endif
+
+        // ANSI color codes, sadly Windows doesn't support them
+//        qSetMessagePattern("[%{time HH:mm:ss.zzz t}] "
+//                           "%{if-debug}" "\x1b[0mDebug:" "\t%{message}" "%{endif}"
+//                           "%{if-info}" "\x1b[106;97mInfo:\x1b[1;96m" "\t%{message}" "%{endif}"
+//                           "%{if-warning}" "\x1b[103;97mWarn:\x1b[1;93m" "\tIn: %{file}:%{line} - %{function}\n" "%{message}" "%{endif}"
+//                           "%{if-critical}" "\x1b[101;97mCrit:\x1b[1;91m" "\tIn: %{file}:%{line} - %{function}\n" "%{message}" "%{endif}"
+//                           "%{if-fatal}" "\x1b[105;30mFatal:\x1b[1;95m" "\tIn: %{file}:%{line} - %{function}\n" "%{message}" "%{endif}"
+//                           "\x1b[0m");
+        qSetMessagePattern("[%{time HH:mm:ss.zzz t}] "
+                           "%{if-debug}"    "Debug:" "\t%{message}" "%{endif}"
+                           "%{if-info}"     "Info:"  "\t%{message}" "%{endif}"
+                           "%{if-warning}"  "Warn:"  "\tIn: %{file}:%{line} - %{function} \n" "%{message}" "%{endif}"
+                           "%{if-critical}" "Crit:"  "\tIn: %{file}:%{line} - %{function} \n" "%{message}" "%{endif}"
+                           "%{if-fatal}"    "Fatal:" "\tIn: %{file}:%{line} - %{function} \n" "%{message}" "%{endif}"
+                           );
 
         QFile outFile(logFileName);
         if (outFile.open(QIODevice::WriteOnly | QIODevice::Append)) {
@@ -80,38 +102,19 @@ namespace LOGUTILS {
             }
         }
 
-        QDateTime now = QDateTime::currentDateTime();
-        QString txt = QLatin1String("[") + now.toString(QStringLiteral("HH:mm:ss.zzz"))+ QLatin1String("] ");
-        switch (type) {
-            case QtDebugMsg:
-                txt += QStringLiteral("\x1b[0mDebug:\t%1").arg(msg);
-                break;
-            case QtInfoMsg:
-                txt += QStringLiteral("\x1b[106;97mInfo:\x1b[1;96m\t%1\x1b[0m").arg(msg);
-                break;
-            case QtWarningMsg:
-                txt += QStringLiteral("\x1b[103;97mWarn:\x1b[1;93m\t%1\x1b[0m").arg(msg);
-                break;
-            case QtCriticalMsg:
-                txt += QStringLiteral("\x1b[101;97mCrit:\x1b[1;91m\t%1\x1b[0m").arg(msg);
-                break;
-            case QtFatalMsg:
-                txt += QStringLiteral("\x1b[105;30mFatal:\x1b[1;95m\t%1\x1b[0m").arg(msg);
-                break;
-        }
+        QString logLineText = qFormatLogMessage(type, context, msg) % lineEndings;
 
         QFile outFile(logFileName);
         outFile.open(QIODevice::WriteOnly | QIODevice::Append);
-        QTextStream ts(&outFile);
+        QTextStream textStream(&outFile);
         if(msg != lastMessage || sameMessageCount > 20) {
-            if(sameMessageCount > 0){
-                QString repeated;
-                repeated.append("^ repeated x").append(QString::number(sameMessageCount));
-                ts << repeated << endl;
-                std::cout << repeated.toStdString() << std::endl;
+            if (sameMessageCount > 0) {
+                QString repeated = QString("^ repeated x%1").arg(sameMessageCount) % lineEndings;
+                textStream << repeated;
+                std::cout << repeated.toStdString();
             }
-            ts << txt << endl;
-            std::cout << txt.toStdString() << std::endl;
+            textStream << logLineText;
+            std::cout << logLineText.toStdString();
             sameMessageCount = 0;
         } else {
             sameMessageCount++;
