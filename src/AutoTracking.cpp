@@ -14,7 +14,6 @@ AutoTracking &AutoTracking::instance()
 
 void AutoTracking::checkAppKeywords(const AppData *app)
 {
-
     QSettings settings;
     bool autoTracking = settings.value(SETT_TRACK_AUTO_SWITCH, false).toBool();
     if (autoTracking) {

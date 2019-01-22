@@ -11,7 +11,7 @@ bool ApiHelper::updateApiKeyFromSettings()
     apiKey = settings.value(SETT_APIKEY).toString().trimmed();
 
     if (apiKey.isEmpty() || apiKey == QLatin1String("false")) {
-        qInfo() << "[EMPTY API KEY !!!]";
+        qInfo() << "[EMPTY API KEY!] can't sync via API, upload activities";
         return false;
     }
     return true;

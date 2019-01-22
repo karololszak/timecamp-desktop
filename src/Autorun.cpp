@@ -53,7 +53,7 @@ void Autorun::addLinuxStartMenuEntry()
 
     // write to Apps location
     startMenuEntry->setExtraProperty(QAutoStart::CustomLocation, QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation));
-    startMenuEntry->setExtraProperty(QAutoStart::Comment, QStringLiteral("Version ") + APPLICATION_VERSION + (isAppImage ? QStringLiteral(" (AppImage)") : QStringLiteral("")));
+    startMenuEntry->setExtraProperty(QAutoStart::Comment, QStringLiteral("Version ") + APPLICATION_VERSION + (isAppImage ? QStringLiteral(" (AppImage)") : QString()));
 
     // set icon
     startMenuEntry->setExtraProperty(QAutoStart::IconName, iconPath);

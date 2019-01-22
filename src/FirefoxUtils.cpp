@@ -83,7 +83,7 @@ QString FirefoxUtils::parseJsRecoveryFilePath(const QString &recoveryFilePath)
 {
     QFile file(recoveryFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return QStringLiteral("");
+        return QString();
     }
 
     QTextStream in(&file);
@@ -105,23 +105,15 @@ QString FirefoxUtils::parseJsonlz4RecoveryFilePath(const QString &recoveryFilePa
     size_t readSize = 0;
     size_t outputBufferSize = 0;
 
-    std::string str_recoveryFilePath = recoveryFilePath.toStdString();
-    auto *cstr_recoveryFilePath = new char[str_recoveryFilePath.length() + 1];
-    std::strcpy(cstr_recoveryFilePath, str_recoveryFilePath.c_str());
-
-    // QString -> std::wstring -> wchar_t* -> cast to char* | because old function works(TM)
-
-    if (!(encryptedData = (char *) readFileToMemory(cstr_recoveryFilePath, &readSize))) {
+    if (!(encryptedData = (char *) readFileToMemory(recoveryFilePath.toLatin1().data(), &readSize))) {
         qDebug() << "[FirefoxUtils::parseJsonlz4RecoveryFilePath] Can't read file: " + recoveryFilePath;
-        delete[] cstr_recoveryFilePath;
-        return QStringLiteral("");
+        return QString();
     }
-    delete[] cstr_recoveryFilePath;
 
     if (readSize < magic_size + decomp_size || memcmp(mozlz4_magic, encryptedData, magic_size) != 0) {
         qDebug() << "[FirefoxUtils::parseJsonlz4RecoveryFilePath] Unsupported file format: " + recoveryFilePath;
         free(encryptedData);
-        return QStringLiteral("");
+        return QString();
     }
 
     size_t i = 0;
@@ -132,7 +124,7 @@ QString FirefoxUtils::parseJsonlz4RecoveryFilePath(const QString &recoveryFilePa
     if (!(decryptedData = (char *) malloc(outputBufferSize))) {
         qDebug() << "[FirefoxUtils::parseJsonlz4RecoveryFilePath] Failed to allocate a buffer for an output.";
         free(encryptedData);
-        return QStringLiteral("");
+        return QString();
     }
 
     int decryptedDataSize = LZ4_decompress_safe(encryptedData + i, decryptedData, (int) (readSize - i), (int) outputBufferSize);
@@ -140,7 +132,7 @@ QString FirefoxUtils::parseJsonlz4RecoveryFilePath(const QString &recoveryFilePa
         qDebug() << "[FirefoxUtils::parseJsonlz4RecoveryFilePath] Failed to decompress a file: " + recoveryFilePath;
         free(decryptedData);
         free(encryptedData);
-        return QStringLiteral("");
+        return QString();
     }
     QString qDecryptedData = QString(decryptedData);
     free(decryptedData);
@@ -176,7 +168,7 @@ QString FirefoxUtils::getFirefoxConfigFilePath()
     QDir firefoxDir(firefoxPath);
     if (!firefoxDir.isReadable()) {
         qInfo() << "Error: " + firefoxPath + " not found";
-        return QStringLiteral("");
+        return QString();
     }
 
     firefoxDir.setFilter(QDir::Dirs | QDir::Readable);
@@ -186,7 +178,7 @@ QString FirefoxUtils::getFirefoxConfigFilePath()
     QStringList dirsList = firefoxDir.entryList(dirsMatches, QDir::Dirs | QDir::Readable);
     if (dirsList.empty()) {
         qInfo() << "Error: *.default directory not found in " + firefoxPath;
-        return QStringLiteral("");
+        return QString();
     }
 
     QString filename = firefoxPath + "/" + dirsList.first();
@@ -220,7 +212,7 @@ QString FirefoxUtils::getFirefoxConfigFilePath()
 
     /* If vector is empty - return empty string. */
     if (sessionFilesVector.empty()) {
-        return QStringLiteral("");
+        return QString();
     }
         /*
             If there is only one element then we don't have
@@ -239,40 +231,39 @@ QString FirefoxUtils::getFirefoxConfigFilePath()
 
 QString FirefoxUtils::getCurrentURLFromFirefoxConfig(const QString &jsonConfig, const QString &windowName)
 {
-
     QJsonParseError error{};
     auto json = QJsonDocument::fromJson(jsonConfig.toUtf8(), &error);
     if (error.error != QJsonParseError::NoError) {
         qDebug() << "JSON parse error: " << error.errorString();
-        return QStringLiteral("");
+        return QString();
     }
     auto jsonObject = json.object();
-    auto jsonArray = jsonObject.value(QStringLiteral("properties")).toArray();
+    auto jsonArray = jsonObject.value(QLatin1String("properties")).toArray();
 
-    auto selectedWindowJson = jsonObject.value(QStringLiteral("selectedWindow"));
-    if (selectedWindowJson.isNull() || selectedWindowJson.isUndefined()) {
+    auto selectedWindowJson = jsonObject.value(QLatin1String("selectedWindow"));
+    if (selectedWindowJson.isUndefined() || selectedWindowJson.isNull()) {
         qDebug() << "Failed getting 'selectedWindow'";
-        return QStringLiteral("");
+        return QString();
     }
 
     int selectedWindow = selectedWindowJson.toInt() - 1;
 
-    auto windowsJsonArray = jsonObject.value(QStringLiteral("windows"));
-    if (windowsJsonArray.isNull() || windowsJsonArray.isUndefined()) {
+    auto windowsJsonArray = jsonObject.value(QLatin1String("windows"));
+    if (windowsJsonArray.isUndefined() || windowsJsonArray.isNull()) {
         qDebug() << "Failed getting 'windows'";
-        return QStringLiteral("");
+        return QString();
     }
 
     auto windowJson = windowsJsonArray.toArray()[selectedWindow];
-    if (windowJson.isNull() || windowJson.isUndefined()) {
+    if (windowJson.isUndefined() || windowJson.isNull()) {
         qDebug() << "Failed getting selected window";
-        return QStringLiteral("");
+        return QString();
     }
 
-    auto tabsJson = windowJson.toObject().value(QStringLiteral("tabs"));
-    if (tabsJson.isNull() || tabsJson.isUndefined()) {
+    auto tabsJson = windowJson.toObject().value(QLatin1String("tabs"));
+    if (tabsJson.isUndefined() || tabsJson.isNull()) {
         qDebug() << "Failed getting 'tabs'";
-        return QStringLiteral("");
+        return QString();
     }
 
     auto tabsJsonArray = tabsJson.toArray();
@@ -280,13 +271,13 @@ QString FirefoxUtils::getCurrentURLFromFirefoxConfig(const QString &jsonConfig, 
 
     for (auto checkedTab: tabsJsonArray) {
 
-        if (checkedTab.isNull() || checkedTab.isUndefined()) {
+        if (checkedTab.isUndefined() || checkedTab.isNull()) {
             qDebug() << "Failed getting selected tab";
             continue;
         }
 
-        auto entriesJson = checkedTab.toObject().value(QStringLiteral("entries"));
-        if (entriesJson.isNull() || entriesJson.isUndefined()) {
+        auto entriesJson = checkedTab.toObject().value(QLatin1String("entries"));
+        if (entriesJson.isUndefined() || entriesJson.isNull()) {
             qDebug() << "Failed getting 'entries'";
             continue;
         }
@@ -295,21 +286,21 @@ QString FirefoxUtils::getCurrentURLFromFirefoxConfig(const QString &jsonConfig, 
         int lastEntryIndex = entriesJsonArray.size() - 1;
 
         auto lastEntryJson = entriesJsonArray[lastEntryIndex];
-        if (lastEntryJson.isNull() || lastEntryJson.isUndefined()) {
+        if (lastEntryJson.isUndefined() || lastEntryJson.isNull()) {
             qDebug() << "Failed getting last entry";
             continue;
         }
 
         auto lastEntryJsonObject = lastEntryJson.toObject();
-        auto titleJson = lastEntryJsonObject.value(QStringLiteral("title"));
+        auto titleJson = lastEntryJsonObject.value(QLatin1String("title"));
         QString titleJsonQstring = titleJson.toString();
         if (titleJsonQstring != windowName) { // check if title matches windowName
 //            qDebug() << "Bad window name, got: " << titleJsonQstring << ", looking for: " << windowName;
             continue;
         }
 
-        auto urlJson = lastEntryJsonObject.value(QStringLiteral("url"));
-        if (urlJson.isNull() || urlJson.isUndefined()) {
+        auto urlJson = lastEntryJsonObject.value(QLatin1String("url"));
+        if (urlJson.isUndefined() || urlJson.isNull()) {
             qDebug() << "Failed getting 'url'";
             continue;
         }
@@ -335,7 +326,7 @@ QString FirefoxUtils::getCurrentURLFromFirefox(const QString windowName)
             content = parseJsonlz4RecoveryFilePath(recoveryFilePath);
         } else {
             qDebug("[UForegroundApp::getAdditionalInfo] Unsupported Firefox recovery file extension.");
-            return QStringLiteral("");
+            return QString();
         }
 
         activeUrl = getCurrentURLFromFirefoxConfig(content, windowName).trimmed();
