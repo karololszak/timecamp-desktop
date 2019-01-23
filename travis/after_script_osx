@@ -3,7 +3,6 @@
 # copied from StackOverflow and improved: https://stackoverflow.com/questions/27952111/unable-to-sign-app-bundle-using-qt-frameworks-on-os-x-10-10
 
 # tree /usr/local/opt/qt*
-cd $TARGET
 
 QT_FRAMEWORK_PATH=/usr/local/opt/qt5/clang_64/lib
 
@@ -114,7 +113,4 @@ echo "******* Verify DMG using spctl ***********"
 spctl  -a -t open --context context:primary-signature -vvvv $DMG_NAME
 
 wget -c https://github.com/probonopd/uploadtool/raw/master/upload.sh
-if [ ! -z $TRAVIS_BRANCH ] && [ "$TRAVIS_BRANCH" != "master" ] ; then
-    export UPLOADTOOL_SUFFIX=$TRAVIS_BRANCH
-fi
 bash upload.sh $DMG_NAME
