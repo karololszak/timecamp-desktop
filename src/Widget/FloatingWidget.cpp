@@ -15,7 +15,6 @@ FloatingWidget::FloatingWidget(QWidget *parent)
     : QWidget(parent, Qt::Tool | Qt::X11BypassWindowManagerHint | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint) {
     this->setAcceptDrops(false); // don't let users drop stuff on our widget
 //    this->setAttribute(Qt::WA_TranslucentBackground, true);
-    this->setAttribute(Qt::WA_MacAlwaysShowToolWindow, true);
     this->background = QPixmap(MAIN_ICON);
     this->gripSize = QSize(16, 8);
     this->setMinimumSize(180, 20);
