@@ -12,6 +12,8 @@
 #include <UIAutomation.h>
 
 #include "src/ControlIterator/IControlIterator.h"
+#include "src/ControlIterator/AccControlIterator.h"
+#include "src/ControlIterator/UIAControlIterator.h"
 
 typedef struct
 {
@@ -33,6 +35,8 @@ private:
     HWINEVENTHOOK appNameChangeEventHook;
     HWINEVENTHOOK appChangeEventHook;
     MSG winApiMsg;
+
+    static void tryToSaveApp(IAccessible *pAcc, VARIANT varChild, HWND hwnd);
 
     static void
     HandleWinEvent(HWINEVENTHOOK hook, DWORD event, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread,
@@ -63,7 +67,7 @@ public:
 
     QString GetInfoFromBrowser(HWND passedHwnd);
     QString GetInfoFromFirefox(HWND passedHwnd);
-    bool startsWithGoodProtocol(QString checkedStr);
+    bool startsWithAnAllowedProtocol(QString checkedStr);
     bool isBrowser(QString processName);
 
     typedef bool(WindowDetails::*DetailsCallback)(IControlItem *node, void *userData);
@@ -88,6 +92,21 @@ public:
 private:
     static HRESULT
     GetControlCondition(IUIAutomation *automation, const long controlType, IUIAutomationCondition **controlCondition);
+
+    static IUIAutomation *_automation;
+    static IUIAutomationElement *firefoxElement;
+    static IUIAutomationCondition *toolbarCondition;
+    static IUIAutomationElementArray *toolbars;
+    static IUIAutomationElement *toolbarElement;
+    static IUIAutomationCondition *comboCondition;
+    static IUIAutomationElement *comboElement;
+    static IUIAutomationCondition *editCondition;
+    static IUIAutomationElement *urlElement;
+    static IUnknown *patternInter;
+    static IUIAutomationValuePattern *valuePattern;
+
+    static void releaseAutomation();
+    static std::wstring onFail(QString message, HRESULT hr);
 };
 
 #endif // WINDOWEVENTS_W_H

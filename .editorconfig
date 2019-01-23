@@ -19,14 +19,21 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 
 # Configuration Files
-[*.{json,xml,yml,config,props,targets,nuspec,resx,ruleset,vsixmanifest,vsct}]
+[*.{css,js,ts,json,xml,yml,ps1,config,props,targets,nuspec,resx,ruleset,vsixmanifest,vsct}]
+indent_style = space
 indent_size = 2
 
 # Markdown Files
-[*.md]
+[*.{yml,md,ps1}]
 trim_trailing_whitespace = false
 
 # Bash Files
 [*.{sh,desktop}]
 end_of_line = lf
 insert_final_newline = false
+
+[*.bat]
+end_of_line = crlf
+
+[travis/*]
+end_of_line = lf

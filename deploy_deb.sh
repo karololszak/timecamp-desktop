@@ -18,7 +18,7 @@ Priority: optional
 Installed-Size: 8096
 Architecture: $ARCH
 Depends: libc-bin, libdbus-1-3, libgtk2.0-0, liblzma5, libsqlcipher0, libsqlite3-0
-Maintainer: Time Solutions <desktop@timecamp.com>
+Maintainer: TimeCamp SA <desktop@timecamp.com>
 Description: Client application for TimeCamp software.
  The package contains client application for www.timecamp.com software.
 EOF

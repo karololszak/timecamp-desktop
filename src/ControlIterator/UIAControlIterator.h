@@ -1,8 +1,8 @@
+#pragma once
 #include "IControlIterator.h"
 
 #include <uiautomation.h>
 #include <strsafe.h>
-#include <src/DataCollector/WindowEvents_W.h>
 
 class UIAControlItem : public IControlItem
 {
@@ -15,7 +15,6 @@ public:
     long getRole();
     std::wstring getName();
     std::wstring getValue();
-
 };
 
 class UIAControlIterator : public IConttrolIterator

@@ -1,12 +1,18 @@
 # Set project information
+set (VERSION_MAJOR 2)
+set (VERSION_MINOR 1)
+set (VERSION_REVISION 3)
+set (VERSION_BUILD 5)
+
+# update VERSION here, it will be carried everywhere else via CMake
+
 set(PRODUCT_NAME "TimeCamp Desktop") # the nice visible name
-set(PRODUCT_VERSION 2.0.0.0)
-set(COMPANY "Time Solutions")
-set(IDENTIFIER "com.TimeSolutions.${PROJECT_NAME}")
-set(COPYRIGHT "Copyright (c) 2010-2018 Time Solutions. All rights reserved.")
+set(COMPANY "TimeCamp SA")
+set(IDENTIFIER "com.TimeCamp.${PROJECT_NAME}")
+set(COPYRIGHT "Copyright (c) 2010-2018 TimeCamp SA. All rights reserved.")
 
 # Path to Qt precompiled libs:
-set(CMAKE_PREFIX_PATH "~/Qt/5.10.1/gcc_64/")
+#set(CMAKE_PREFIX_PATH "~/Qt/5.10.1/gcc_64/")
 
 # usual default paths from installer:
 # Windows: "C:\\Qt\\5.10.0\\msvc2017_64\\lib\\cmake"

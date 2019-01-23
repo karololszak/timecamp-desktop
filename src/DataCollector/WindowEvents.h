@@ -4,6 +4,7 @@
 #include <QThread>
 #include <QDebug>
 #include "src/AppData.h"
+#include "src/FirefoxUtils.h"
 
 class WindowEvents : public QThread
 {
@@ -14,12 +15,13 @@ public:
     bool isIdle = false;
 
 signals:
-    void noLongerAway(unsigned long); // Signals cannot be declared virtual
+    void noLongerAwayShowPopup(unsigned long); // Signals cannot be declared virtual
 
 protected:
-    virtual void run() = 0;
+    void run() override = 0;
     virtual unsigned long getIdleTime() = 0;
     AppData static * logAppName(QString appName, QString windowName, QString additionalInfo);
+    FirefoxUtils *firefoxUtils;
 private:
     unsigned long lastIdleTimestamp = 0;
     unsigned long currentIdleTimestamp = 0;

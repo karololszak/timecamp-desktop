@@ -1,3 +1,4 @@
+#pragma once
 #include "IControlIterator.h"
 
 #include <Oleacc.h>
@@ -21,13 +22,11 @@ public:
     long getRole();
     std::wstring getName();
     std::wstring getValue();
-
 };
 
 class AccControlIterator : public IConttrolIterator
 {
 public:
-
     template<class C>
     void iterate(HWND currenthwnd, C *callbackObj, bool (C::*callbackFunction)(IControlItem *node, void *userData),
                  void *userData = NULL, bool fromLast = false)
@@ -59,7 +58,6 @@ public:
     }
 
 private:
-
     template<class C>
     bool iterateRecursion(AccControlItem *parent, C *callbackObj,
                           bool (C::*callbackFunction)(IControlItem *node, void *userData), void *userData,
@@ -81,7 +79,6 @@ private:
         if (hresult == S_OK) {
             for (int i = fromLast * (obtained - 1); (i < obtained && !fromLast) || (i >= 0 && fromLast); i += 1 - (fromLast * 2)) {
                 if (children[i].vt == VT_DISPATCH) {
-
                     if (children[i].pdispVal) {
                         if (result) {
                             IAccessible *acc_child = NULL;

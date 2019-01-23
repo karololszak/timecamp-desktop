@@ -28,7 +28,7 @@ unsigned long WindowEvents_U::getIdleTime()
 
 std::string WindowEvents_U::execCommand(const char *cmd)
 {
-    std::array<char, 128> buffer;
+    std::array<char, 128> buffer{};
     std::string result;
     std::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
     if (!pipe) throw std::runtime_error("popen() failed!");
@@ -43,26 +43,27 @@ std::string WindowEvents_U::execCommand(const char *cmd)
 void WindowEvents_U::logAppName(QString appName, QString windowName)
 {
     AppData *app;
-    QString additionalInfo = "";
+    QString additionalInfo = QString();
 
-    if (appName == "firefox") {
-        app = WindowEvents::logAppName(appName, windowName, appName); // set additionalInfo to appName for now
-        additionalInfo = getCurrentURLFromFirefox(); // somewhat unreliable - data is usually a few seconds late into the file
-    } else if (appName == "chrome") {
-        app = WindowEvents::logAppName(appName, windowName, appName); // same as above, just to skip the "Internet" checker
+    app = WindowEvents::logAppName(appName, windowName, additionalInfo); // save app
+
+    if (appName == QLatin1String("firefox")) {
+        windowName = windowName.replace(QLatin1String(" - Mozilla Firefox"), QLatin1String(""));
+        additionalInfo = firefoxUtils->getCurrentURLFromFirefox(windowName); // somewhat unreliable - data is usually a few seconds late into the file
+    } else if (appName == QLatin1String("chrome")) {
         additionalInfo = getCurrentURLFromChrome(windowName); // somewhat unreliable - might not get the URL
     }
 
-    if (additionalInfo != "") {
+    if (!additionalInfo.isEmpty()) {
         app->setAdditionalInfo(additionalInfo); // after we get the URL, update additionalInfo
-    } else {
-        WindowEvents::logAppName(appName, windowName, additionalInfo);
+        // this is done in this way to make sure we have correct start time of app, and to update URL later
     }
 }
 
 void WindowEvents_U::run()
 {
     qInfo("thread started");
+    firefoxUtils = new FirefoxUtils();
     Display *display;
     Window root;
     XEvent event;
@@ -83,9 +84,6 @@ void WindowEvents_U::run()
 
     XSelectInput(display, root, PropertyChangeMask);
 
-    char *last_name;
-    char *curr_name;
-
     Atom actual_type;
     int actual_format;
     unsigned long nitems;
@@ -98,99 +96,116 @@ void WindowEvents_U::run()
     long xwindowid_old = 0;
     long xwindowid_curr = 0;
 
-    XTextProperty *text_prop_return;
-
     while (!QThread::currentThread()->isInterruptionRequested()) {
-        XNextEvent(display, &event);
-        if (event.type == PropertyNotify) {
-            if (event.xproperty.atom == NET_ACTIVE_WINDOW || event.xproperty.atom == NET_WM_NAME || event.xproperty.atom == WM_NAME) {
-                status = XGetWindowProperty(
-                    display,
-                    root,
-                    NET_ACTIVE_WINDOW,
-                    0,
-                    (~0L),
-                    False,
-                    AnyPropertyType,
-                    &actual_type,
-                    &actual_format,
-                    &nitems,
-                    &bytes,
-                    (unsigned char **) &data);
-
-                if (status != Success) {
-                    qInfo("[WindowEvents_U] Error of status = %d\n", status);
-                    continue;
-                }
-
-                if (xwindowid_curr != data[0] && data[0] != 0) {
-                    XSelectInput(display, xwindowid_old, NoEventMask); // don't fetch events from old window
-
-                    xwindowid_old = xwindowid_curr; // what was current is now old
-                    xwindowid_curr = data[0];       // set new "current"
-
-                    XSelectInput(display, xwindowid_curr, PropertyChangeMask);
-                }
-
-                status = XGetWindowProperty(
-                    display,
-                    xwindowid_curr,
-                    NET_WM_NAME,
-                    0,
-                    (~0L),
-                    False,
-                    AnyPropertyType,
-                    &actual_type,
-                    &actual_format,
-                    &nitems,
-                    &bytes,
-                    &window_name);
-
-                if (status != Success) {
-                    qInfo("[WindowEvents_U] Error of status = %d\n", status);
-                    continue;
-                }
-
-                status = XGetWindowProperty(
-                    display,
-                    xwindowid_curr,
-                    NET_WM_PID,
-                    0,
-                    (~0L),
-                    False,
-                    AnyPropertyType,
-                    &actual_type,
-                    &actual_format,
-                    &nitems,
-                    &bytes,
-                    &pid);
-
-                if (status != Success) {
-                    qInfo("[WindowEvents_U] Error of status = %d\n", status);
-                    continue;
-                }
-                if(pid == nullptr){
-                    qInfo("[WindowEvents_U] Error: pid was NULL");
-                    continue;
-                }
-
-                auto *longarr = reinterpret_cast<long *>(pid);
-                long longpid = longarr[0];
-
-                std::string command = "";
-                command += "ps ";
-                command += " -o comm= ";
-                command += QString::number(longpid).toStdString();
-
-//                qInfo() << QString::fromStdString(command);
-
-                app_name = execCommand(command.c_str());
-
-                logAppName(QString::fromStdString(app_name), QString::fromUtf8((char*)window_name));
-            }
+        if (!XPending(display)) {
+            continue;
         }
+
+        XNextEvent(display, &event);
+        // if it's not a property notify, we don't want to process it
+        if (event.type != PropertyNotify) {
+            continue;
+        }
+        // if not one of the properties we want, skip it too
+        if (!(event.xproperty.atom == NET_ACTIVE_WINDOW || event.xproperty.atom == NET_WM_NAME || event.xproperty.atom == WM_NAME)) {
+            continue;
+        }
+
+        // get active window
+        status = XGetWindowProperty(
+            display,
+            root,
+            NET_ACTIVE_WINDOW,
+            0,
+            (~0L),
+            False,
+            AnyPropertyType,
+            &actual_type,
+            &actual_format,
+            &nitems,
+            &bytes,
+            (unsigned char **) &data);
+
+        if (status != Success) {
+            qInfo("[WindowEvents_U] Error of status = %d\n", status);
+            continue;
+        }
+
+        // if it's another window, listen to the new window, and ignore old window
+        if (xwindowid_curr != data[0] && data[0] != 0) {
+            XSelectInput(display, xwindowid_old, NoEventMask); // don't fetch events from old window
+
+            xwindowid_old = xwindowid_curr; // what was current is now old
+            xwindowid_curr = data[0];       // set new "current"
+
+            XSelectInput(display, xwindowid_curr, PropertyChangeMask);
+        }
+
+        // get the window name
+        status = XGetWindowProperty(
+            display,
+            xwindowid_curr,
+            NET_WM_NAME,
+            0,
+            (~0L),
+            False,
+            AnyPropertyType,
+            &actual_type,
+            &actual_format,
+            &nitems,
+            &bytes,
+            &window_name);
+
+        if (status != Success) {
+            qInfo("[WindowEvents_U] Error of status = %d\n", status);
+            continue;
+        }
+
+        // get the window PID
+        status = XGetWindowProperty(
+            display,
+            xwindowid_curr,
+            NET_WM_PID,
+            0,
+            (~0L),
+            False,
+            AnyPropertyType,
+            &actual_type,
+            &actual_format,
+            &nitems,
+            &bytes,
+            &pid);
+
+        if (status != Success) {
+            qInfo("[WindowEvents_U] Error of status = %d\n", status);
+            continue;
+        }
+        if (pid == nullptr) {
+            qInfo("[WindowEvents_U] Error: pid was NULL");
+            continue;
+        }
+
+        // convert PID to a usable number
+        auto *longarr = reinterpret_cast<long *>(pid);
+        long longpid = longarr[0];
+
+        // use `ps` to get the process name
+        std::string command = "";
+        command += "ps ";
+        command += " -o comm= ";
+        command += QString::number(longpid).toStdString();
+//                qInfo() << QString::fromStdString(command);
+        app_name = execCommand(command.c_str());
+
+        // save the app name and window name
+        logAppName(QString::fromStdString(app_name).trimmed(), QString::fromUtf8((char *) window_name).trimmed());
     }
 
     XCloseDisplay(display);
     qInfo("thread stopped");
+}
+
+WindowEvents_U::~WindowEvents_U()
+{
+    delete firefoxUtils;
 }

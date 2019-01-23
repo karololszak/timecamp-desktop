@@ -7,19 +7,37 @@
 
 #include "AppData.h"
 #include "Task.h"
+#include "ApiHelper.h"
 
 class Comms : public QObject
 {
 Q_OBJECT
     Q_DISABLE_COPY(Comms)
 
-public:
+    const char* WEBSITES_APPNAME = "Internet";
+    AppData *lastApp = nullptr;
+    QSettings settings;
+    qint64 lastSync;
+    qint64 currentTime;
+    QString apiKey;
+    ApiHelper *apiHelper;
+    qint64 lastTimerStatusCheck;
+    int retryCount = 0;
+    bool lastBatchBig = false;
 
+    qint64 user_id;
+    qint64 root_group_id;
+    qint64 primary_group_id;
+    QNetworkAccessManager qnam;
+    QHash<QUrl, std::function<void(Comms *, QByteArray buffer)>> commsReplies; // see https://stackoverflow.com/a/7582574/8538394
+
+public:
     static Comms &instance();
     ~Comms() override = default;
 
-    void saveApp(AppData *app);
-    void sendAppData(QVector<AppData> *appList);
+    void appChanged(AppData *app);
+    void reportApp(AppData *app);
+    void sendAppData(const QVector<AppData> *appList);
     void getUserInfo();
     void getSettings();
     void getTasks();
@@ -32,33 +50,13 @@ public:
     void netRequest(QNetworkRequest, QNetworkAccessManager::Operation = QNetworkAccessManager::GetOperation, QByteArray = nullptr);
     void postRequest(QUrl endpointUrl, QUrlQuery params);
 
-    bool updateApiKeyFromSettings();
-
-    QUrlQuery getApiParams();
-    QUrl getApiUrl(QString, QString);
-    const QString &getApiKey() const;
+signals:
+    void DbSaveApp(AppData *);
+    void announceAppChange(AppData *);
+    void gotGenericReply(QNetworkReply *reply, QByteArray buffer);
 
 protected:
     explicit Comms(QObject *parent = nullptr);
-
-private:
-    AppData *lastApp = nullptr;
-    QSettings settings;
-    qint64 lastSync;
-    qint64 currentTime;
-    QString apiKey;
-    int retryCount = 0;
-    bool lastBatchBig = false;
-
-    int user_id;
-    int root_group_id;
-    int primary_group_id;
-    QNetworkAccessManager qnam;
-    QHash<QUrl, std::function<void(Comms *, QByteArray buffer)>> commsReplies; // see https://stackoverflow.com/a/7582574/8538394
-
-signals:
-    void DbSaveApp(AppData *);
-    void gotGenericReply(QNetworkReply *reply, QByteArray buffer);
 
 public slots:
     void appDataReply(QByteArray buffer);
@@ -68,6 +66,9 @@ public slots:
     void genericReply(QNetworkReply *reply);
     void checkBatchSize();
     void clearLastApp();
+    void timerStart(qint64 taskID = 0, qint64 entryID = 0, qint64 startedAtInMS = 0);
+    void timerStop(qint64 timerID = 0, qint64 stoppedAtInMS = 0);
+    void timerStatus();
 };
 
 #endif // COMMS_H

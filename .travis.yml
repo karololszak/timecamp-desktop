@@ -1,80 +1,72 @@
 language: cpp
-dist: trusty
-sudo: require
-compiler:
-#  - clang # no need for it now
-  - gcc
+
+matrix:
+  include:
+  - os: linux
+    dist: trusty
+    sudo: required
+    compiler: gcc
+#    cache: ccache #
+    # we will revisit ccache later, for now it breaks our builds somehow
+    env: SRC="cmake-build-relwithdebinfo" TARGET="linuxdeployqt/TimeCampDesktop.AppDir" CMAKE_NAME="TimeCampDesktop" BUNDLE_NAME="TimeCampDesktop" LinuxDeployQtExec="./linuxdeployqt-continuous-x86_64.AppImage"
+  - os: osx
+    compiler: clang
+    node_js: 8
+    env: SRC="cmake-build-relwithdebinfo" TARGET="cmake-build-relwithdebinfo" CMAKE_NAME="TimeCampDesktop" BUNDLE_NAME="TimeCamp Desktop.app" DMG_NAME="TimeCampSetup_macOS.dmg"
+
 git:
   depth: 5
+  submodules: false
+  quiet: true
 
-before_install:
-  - sudo add-apt-repository ppa:beineri/opt-qt596-trusty -y
-  - sudo apt-get update -qq
-
-install:
-  - sudo apt-get -y install qt59base qt59webengine qt59x11extras tree
-  - source /opt/qt*/bin/qt*-env.sh
-  - export PATH=/opt/qt59/bin:$PATH
-  - SRC="cmake-build-relwithdebinfo"
-  - TARGET="linuxdeployqt/TimeCampDesktop.AppDir"
-  - CMAKE_NAME="TimeCampDesktop"
-  - BUNDLE_NAME="TimeCampDesktop"
-  - LinuxDeployQtExec="./linuxdeployqt-continuous-x86_64.AppImage"
-
-before_script:
-  - # as in https://github.com/probonopd/linuxdeployqt#simplest-example
-  - mkdir -p $TARGET/usr/bin
-  - mkdir -p $TARGET/usr/lib
-  - mkdir -p $TARGET/usr/share/applications # app.desktop file path
-  - mkdir -p $TARGET/usr/share/icons/hicolor/16x16 # icons
-  - mkdir -p $TARGET/usr/share/icons/hicolor/32x32 # icons
-  - mkdir -p $TARGET/usr/share/icons/hicolor/48x48 # icons
-  - mkdir -p $TARGET/usr/share/icons/hicolor/64x64 # icons
-  - mkdir -p $TARGET/usr/share/icons/hicolor/128x128 # icons
-  - mkdir -p $TARGET/usr/share/icons/hicolor/256x256 # icons
-  - mkdir -p $SRC
-  - cp CMakeProjectConfig.cmake.example CMakeProjectConfig.cmake
+branches:
+  except:
+  - # Do not build tags that we create when we upload to GitHub Releases
+  - /^(?i:continuous)/
 
 addons:
   sonarcloud:
     organization: "timecamp-github" # the key of the org you chose at step #3
+  homebrew:
+    packages:
+      - cmake
+      - tree
+      - ninja
+      - qt
+#    update: true
+
+before_install:
+- git submodule sync
+- git submodule update --init --recursive
+- git submodule update --recursive --remote
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source ./travis/before_install_linux ; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source ./travis/before_install_osx ; fi
+
+install:
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source ./travis/install_linux ; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source ./travis/install_osx ; fi
+
+before_script:
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source ./travis/before_script_linux ; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source ./travis/before_script_osx ; fi
 
 script:
-  - cd $SRC
-  - cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -G "Unix Makefiles" "../"
-  - cd ../
-  - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then cmake --build $SRC --target "${CMAKE_NAME}" --; fi' # regular build
-  - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then build-wrapper-linux-x86-64 --out-dir "${TARGET}" cmake --build $SRC --target "${CMAKE_NAME}" --; fi' # build
-  - tree
-  - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then sonar-scanner; fi' # sonar only on non-PRs
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source ./travis/script_linux ; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source ./travis/script_osx ; fi
 
 after_success:
-  - cp $SRC/"${CMAKE_NAME}" $TARGET"/usr/bin/""${BUNDLE_NAME}" # copy the binary
-  - cp res"/${BUNDLE_NAME}.desktop" $TARGET"/usr/share/applications/${BUNDLE_NAME}.desktop" # copy app.desktop file
-  - cp "res/AppIcon_16.png" $TARGET"/usr/share/icons/hicolor/16x16/${BUNDLE_NAME}.png"
-  - cp "res/AppIcon_32.png" $TARGET"/usr/share/icons/hicolor/32x32/${BUNDLE_NAME}.png"
-  - cp "res/AppIcon_48.png" $TARGET"/usr/share/icons/hicolor/48x48/${BUNDLE_NAME}.png"
-  - cp "res/AppIcon_64.png" $TARGET"/usr/share/icons/hicolor/64x64/${BUNDLE_NAME}.png"
-  - cp "res/AppIcon_128.png" $TARGET"/usr/share/icons/hicolor/128x128/${BUNDLE_NAME}.png"
-  - cp "res/AppIcon_256.png" $TARGET"/usr/share/icons/hicolor/256x256/${BUNDLE_NAME}.png"
-  - unset QTDIR; unset QT_PLUGIN_PATH ; unset LD_LIBRARY_PATH
-  - wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
-  - chmod a+x linuxdeployqt-continuous-x86_64.AppImage
-  - cp /lib/x86_64-linux-gnu/libssl.so.1.0.0  $TARGET"/usr/lib/"
-  - cp /lib/x86_64-linux-gnu/libcrypto.so.1.0.0  $TARGET"/usr/lib/"
-  - cp /lib/x86_64-linux-gnu/libbsd.so.0 $TARGET"/usr/lib/"
-  - cp -r /usr/lib/x86_64-linux-gnu/nss $TARGET"/usr/lib/"
-  - export VERSION=$(git rev-parse --short HEAD) # linuxdeployqt uses this for naming the file
-  - ${LinuxDeployQtExec} $TARGET"/usr/share/applications/${BUNDLE_NAME}.desktop" -bundle-non-qt-libs -extra-plugins=sqldrivers,iconengines -verbose=2
-  - ${LinuxDeployQtExec} $TARGET"/usr/share/applications/${BUNDLE_NAME}.desktop" -appimage -verbose=2
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source ./travis/after_success_linux ; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source ./travis/after_success_osx ; fi
 
 after_script:
-  - echo "Unbundled dependant libs (they need to be in the system!):"
-  - find $TARGET -executable -type f -exec ldd {} \; | grep -v "timecamp-desktop" | cut -d " " -f 2-3  | sort | uniq
-  - wget -c https://github.com/probonopd/uploadtool/raw/master/upload.sh
-  - bash upload.sh ${BUNDLE_NAME}*.AppImage*
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source ./travis/after_script_linux ; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source ./travis/after_script_osx ; fi
 
-branches:
-  except:
-    - # Do not build tags that we create when we upload to GitHub Releases
-    - /^(?i:continuous)/
+deploy:
+  provider: releases
+  api_key: $GITHUB_TOKEN
+  file: ${TARGET}/${DMG_NAME}
+  skip_cleanup: true
+  on:
+    condition: $TRAVIS_OS_NAME = osx
+    tags: true

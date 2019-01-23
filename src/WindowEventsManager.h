@@ -11,7 +11,8 @@ Q_OBJECT
 public:
 
     static WindowEventsManager &instance();
-    virtual ~WindowEventsManager() = default;
+
+    ~WindowEventsManager() override = default;
     WindowEvents *getCaptureEventsThread() const;
 
 signals:
@@ -21,15 +22,15 @@ signals:
 
 public slots:
     void startOrStopThread(bool startOrStop);
-    void noLongerAway(unsigned long);
+    void awayPopup(unsigned long);
+    void startThread();
+    void stopThread();
 
 protected:
     explicit WindowEventsManager(QObject *parent = nullptr);
 
 private:
     WindowEvents *captureEventsThread;
-    void startThread();
-    void stopThread();
 };
 
 

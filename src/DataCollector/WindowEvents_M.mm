@@ -37,7 +37,7 @@
 - (void)didActivateApp:(NSNotification *)notification {
     if (!WindowEvents_M->isIdle) {
         NSRunningApplication *temp = notification.userInfo[NSWorkspaceApplicationKey];
-        WindowEvents_M->GetActiveApp(QString::fromNSString(temp.localizedName));
+        WindowEvents_M->GetActiveApp(QString::fromNSString(temp.localizedName).trimmed());
     }
 }
 @end
@@ -71,10 +71,11 @@ unsigned long WindowEvents_M::getIdleTime()
 void WindowEvents_M::run()
 {
     qInfo("thread started");
+    firefoxUtils = new FirefoxUtils();
 
 //    QTimer *timer = new QTimer();
-//    connect(timer, SIGNAL(timeout()), this, SLOT(GetActiveApp()));
-//    connect(timer, &QTimer::timeout, this, &WindowEvents_M::GetActiveApp);
+//    QObject::connect(timer, SIGNAL(timeout()), this, SLOT(GetActiveApp()));
+//    QObject::connect(timer, &QTimer::timeout, this, &WindowEvents_M::GetActiveApp);
 //    timer->start(2*1000);
 
 //    timer->stop();
@@ -164,13 +165,17 @@ void WindowEvents_M::GetActiveApp(QString processName)
         }
     }
 
+    if (processName == "loginwindow") {
+        return;
+    }
+
     //Get Window Name or
     appTitle = GetProcWindowName(processName);
 
     AppData *app;
 
     app = WindowEvents::logAppName(processName, appTitle, additionalInfo);
-    additionalInfo = GetAdditionalInfo(processName.toLower());
+    additionalInfo = GetAdditionalInfo(processName.toLower(), appTitle);
 
     if(additionalInfo != "") {
         app->setAdditionalInfo(additionalInfo); // after we get the URL, update additionalInfo
@@ -261,7 +266,7 @@ QString WindowEvents_M::GetProcNameFromPath(QString processName)
 }
 */
 
-QString WindowEvents_M::GetAdditionalInfo(QString processName)
+QString WindowEvents_M::GetAdditionalInfo(QString processName, QString appTitle)
 {
     QString additionalInfo("");
     @autoreleasepool {
@@ -314,7 +319,7 @@ QString WindowEvents_M::GetAdditionalInfo(QString processName)
             executed = true;
 
         } else if (processName == "firefox") {
-            additionalInfo = getCurrentURLFromFirefox();
+            additionalInfo = firefoxUtils->getCurrentURLFromFirefox(appTitle);
             qDebug() << "[FirefoxURL] Found: " << additionalInfo;
 
             executed = false; //this should be false, because we don't have apple script object initialize here
@@ -344,4 +349,9 @@ QString WindowEvents_M::GetAdditionalInfo(QString processName)
         [scriptObject release];
     }
     return additionalInfo;
+}
+
+WindowEvents_M::~WindowEvents_M()
+{
+    delete firefoxUtils;
 }

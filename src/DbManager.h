@@ -30,9 +30,10 @@ public:
 
     QVector<AppData> getAppsSinceLastSync(qint64 last_sync);
 
-    QHash<qint64, Task*> taskList;
+    QHash<qint64, Task*> taskList; // taskID, taskObj with data
 
     const QHash<qint64, Task *> &getTaskList() const;
+    Task * getTaskById(qint64 taskId);
 
     void addToTaskList(Task*);
     void clearTaskList();
@@ -44,6 +45,7 @@ public slots:
      * @return true - person added successfully, false - person not added
      */
     bool saveAppToDb(AppData *app);
+    void loginLogout(bool isLoggedIn);
 
 private:
     explicit DbManager(QObject *parent = nullptr);

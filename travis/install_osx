@@ -1,0 +1,33 @@
+#!/bin/sh -xe
+
+#we use travis' addons system now
+#if ! brew ls --version cmake &>/dev/null; then
+#	brew install cmake
+#else
+#	brew upgrade cmake
+#fi
+
+# we use travis' node
+#brew install node
+#brew link --overwrite node
+echo 'export PATH="/usr/local/opt/icu4c/bin:$PATH"' >> ~/.bash_profile
+echo 'export PATH="/usr/local/opt/icu4c/sbin:$PATH"' >> ~/.bash_profile
+
+# node 8 should be selected by travis, no need to install it, hopefully
+#nvm install 8
+nvm use 8
+nvm alias default 8
+npm install --global create-dmg
+
+#we use travis' addons system now
+#brew install tree
+#brew install ninja
+#
+#brew install qt
+brew link --force qt
+export HOMEBREW_QT5_VERSION=$(brew list --versions qt | rev | cut -d' ' -f1 | rev)
+sudo ln -s /usr/local/Cellar/qt/$HOMEBREW_QT5_VERSION/mkspecs /usr/local/mkspecs
+sudo ln -s /usr/local/Cellar/qt/$HOMEBREW_QT5_VERSION/plugins /usr/local/plugins
+echo 'export PATH="/usr/local/opt/qt/bin:$PATH"' >> ~/.bash_profile
+
+chmod -R 755 /usr/local/opt/qt/*

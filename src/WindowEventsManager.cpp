@@ -32,16 +32,16 @@ WindowEventsManager::WindowEventsManager(QObject *parent) : QObject(parent)
 #else
     captureEventsThread = new WindowEvents_M();
 #endif
-    QObject::connect(captureEventsThread, &WindowEvents::noLongerAway, this, &WindowEventsManager::noLongerAway);
+    QObject::connect(captureEventsThread, &WindowEvents::noLongerAwayShowPopup, this, &WindowEventsManager::awayPopup);
 }
 
-void WindowEventsManager::noLongerAway(unsigned long howLongWasAwayMS)
+void WindowEventsManager::awayPopup(unsigned long howLongWasAwayMS)
 {
     QMessageBox msgBox;
     msgBox.setTextInteractionFlags(Qt::NoTextInteraction);
     msgBox.setIconPixmap(QPixmap(MAIN_ICON).scaledToWidth(96));
-    msgBox.setText("You've been away from computer.");
-    msgBox.setInformativeText("Do you want to log away time activity?");
+    msgBox.setText(QStringLiteral("You've been away from computer."));
+    msgBox.setInformativeText(QStringLiteral("Do you want to log away time activity?"));
     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     msgBox.setDefaultButton(QMessageBox::Yes);
 
@@ -61,12 +61,12 @@ void WindowEventsManager::noLongerAway(unsigned long howLongWasAwayMS)
 
     // use a new loop and process bg events
     QEventLoop loop;
-    QMetaObject::Connection conn1 = QObject::connect(&msgBox, &QDialog::finished, &loop, &QEventLoop::quit);
+    QMetaObject::Connection dialogFinishedConn = QObject::connect(&msgBox, &QDialog::finished, &loop, &QEventLoop::quit);
 
     // 128ms of events processing
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 128);
     loop.exec();
-    QObject::disconnect(conn1);
+    QObject::disconnect(dialogFinishedConn);
 
     int ret = msgBox.result(); // get result
 

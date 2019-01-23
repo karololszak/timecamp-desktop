@@ -17,6 +17,8 @@
 #include <QSettings>
 #include <QJsonDocument>
 
+#include "third-party/vendor/de/skycoder42/qtaskbarcontrol/qtaskbarcontrol.h"
+
 #include "Overrides/TCRequestInterceptor.h"
 #include "Overrides/TCWebEngineView.h"
 #include "Task.h"
@@ -36,17 +38,17 @@ public:
     ~MainWidget() override;
     void init();
 
-    void twoSecTimerTimeout();
+    void webpageDataUpdateOnInterval();
     QHash<QString, int> LastTasks;
     QJsonDocument LastTasksCache;
 
 signals:
-    void pageStatusChanged(bool, QString);
-    void timerStatusChanged(bool, QString);
+    void pageStatusChanged(bool);
+    void pageTitleChanged(QString);
     void checkIsIdle();
     void windowStatusChanged(bool);
     void lastTasksChanged();
-    void startTaskViaObjToID(qint64);
+    void updateTimerStatus(QByteArray);
 
 protected:
     void handleSpacingEvents();
@@ -60,21 +62,22 @@ public slots:
     void webviewRefresh();
     void webviewFullscreen();
 
-    void webpageTitleChanged(QString title);
+    void webpageTitleChanged(const QString &title);
 
     void wasTheWindowLeftOpened();
     void open();
-    //void status();
-    void startTask();
-    void startTaskByID(qint64);
-    void startTaskByTaskObj(Task*, bool);
-    void stopTask();
+    void chooseTask();
     void quit();
 
     void handleLoadStarted();
     void handleLoadProgress(int);
     void handleLoadFinished(bool);
     void goToAwayPage();
+    void triggerTimerStatusFetchAsync();
+    void getCurrentWebTimerStatusEmitted();
+    void downloadRequested(QWebEngineDownloadItem* download);
+    void setDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
+    void downloadFinished();
 
 private:
     Ui::MainWidget *ui;
@@ -89,16 +92,15 @@ private:
 
     void runJSinPage(QString js);
     void forceLoadUrl(QString url);
-    void checkIsTimerRunning();
+    void showTaskPicker();
     void fetchRecentTasks();
+    void checkAPIkey();
     void fetchAPIkey();
-    void fetchTimerName();
     bool checkIfOnTimerPage();
     void goToTimerPage();
     void refreshTimerPageData();
-    void pressStartTimerButton();
 
-    void checkIfLoggedIn(QString title);
+    bool checkIfOnLoginPage();
     void setupWebview();
 
     QShortcut *refreshBind;
@@ -106,10 +108,12 @@ private:
 
     bool MainWidgetWasInitialised = false;
     bool loggedIn;
-
+private:
+    void setLoggedIn(bool loggedInUpdate);
     void setApiKey(const QString &apiKey);
-    void setTimerName(const QString &timerName);
-    void setIsTimerRunning(bool isTimerRunning);
+
+    QTaskbarControl *taskbar;
+
 };
 
 #endif // MAINWIDGET_H

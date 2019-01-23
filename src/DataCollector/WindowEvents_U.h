@@ -11,6 +11,9 @@
 
 class WindowEvents_U : public WindowEvents
 {
+public:
+    ~WindowEvents_U() override;
+
 protected:
     void run() override; // your thread implementation goes here
     unsigned long getIdleTime() override;

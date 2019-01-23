@@ -2,6 +2,10 @@
 #include <QFont>
 #include <QPen>
 #include <QDebug>
+#include <QTimer>
+#include <QTime>
+#include <QStyle>
+#include <QBitmap>
 #include <cmath>
 
 #include "FloatingWidget.h"
@@ -11,22 +15,42 @@ FloatingWidget::FloatingWidget(QWidget *parent)
     : QWidget(parent, Qt::Tool | Qt::X11BypassWindowManagerHint | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint) {
     this->setAcceptDrops(false); // don't let users drop stuff on our widget
 //    this->setAttribute(Qt::WA_TranslucentBackground, true);
+    this->setAttribute(Qt::WA_MacAlwaysShowToolWindow, true);
     this->background = QPixmap(MAIN_ICON);
     this->gripSize = QSize(16, 8);
     this->setMinimumSize(180, 20);
     this->setMaximumSize(600, 64);
-    this->setStyleSheet("background-color:green;");
+    this->setStyleSheet(QStringLiteral("background-color:green;"));
     this->hide();
     this->setMouseTracking(true); // we need this to show resize arrows
+
+
+    playPixmap = style()->standardPixmap(QStyle::SP_MediaPlay);
+    QBitmap playMask = playPixmap.createMaskFromColor(Qt::transparent, Qt::MaskInColor);
+    playPixmap.fill(Qt::white);
+    playPixmap.setMask(playMask);
+
+    pausePixmap = style()->standardPixmap(QStyle::SP_MediaPause);
+    QBitmap pauseMask = pausePixmap.createMaskFromColor(Qt::transparent, Qt::MaskInColor);
+    pausePixmap.fill(Qt::white);
+    pausePixmap.setMask(pauseMask);
 
     FloatingWidgetWasInitialised = true;
 
     timerTextLabel = new QLabel(this);
     taskTextLabel = new ClickableLabel(this);
     startStopLabel = new ClickableLabel(this);
+    QString QLabelStyle(QStringLiteral("QLabel { color: white; }"));
+    timerTextLabel->setStyleSheet(QLabelStyle);
+    taskTextLabel->setStyleSheet(QLabelStyle);
+    startStopLabel->setStyleSheet(QLabelStyle);
 
-    QMetaObject::Connection conn1 = QObject::connect(taskTextLabel, &ClickableLabel::clicked,
-                                                     this, &FloatingWidget::emitTaskNameClicked);
+    startStopLabel->setScaledContents(true); // resize play/pause icon
+
+    QMetaObject::Connection conn1 = QObject::connect(taskTextLabel, &ClickableLabel::clicked, [this]()
+    {
+        emit taskNameClicked();
+    });
     this->setContextMenuPolicy(Qt::CustomContextMenu);
 
     QMetaObject::Connection conn2 = QObject::connect(this, &FloatingWidget::customContextMenuRequested,
@@ -34,37 +58,50 @@ FloatingWidget::FloatingWidget(QWidget *parent)
 
     QMetaObject::Connection conn3 = QObject::connect(startStopLabel, &ClickableLabel::clicked,
                                                      this, &FloatingWidget::startStopClicked);
+
+    auto *oneSecondTimer = new QTimer();
+    oneSecondTimer->setTimerType(Qt::TimerType::PreciseTimer);
+    QObject::connect(oneSecondTimer, &QTimer::timeout, this, &FloatingWidget::oneSecTimerTimeout);
+    oneSecondTimer->start(1000);
+    updateWidgetStatus(false, QString());
 }
 
-void FloatingWidget::emitTaskNameClicked() {
-    emit taskNameClicked();
+void FloatingWidget::oneSecTimerTimeout() {
+    if (timerElapsed > 0) {
+        QTime time(0,0,0);
+        time = time.addSecs(timerElapsed);
+        if (time.hour() > 0) {
+            this->setTimerText(time.toString(QStringLiteral("H:mm:ss")));
+        } else {
+            this->setTimerText(time.toString(QStringLiteral("m:ss")));
+        }
+        timerElapsed++;
+    }
 }
 
-void FloatingWidget::updateWidgetStatus(bool canBeStopped, QString timerName) {
+void FloatingWidget::updateWidgetStatus(bool canBeStopped, QString taskName) {
+    timerRunning = canBeStopped;
     if (canBeStopped) {
-        startStopLabel->setText(PAUSE_BUTTON);
+        startStopLabel->setPixmap(pausePixmap);
     } else {
-        startStopLabel->setText(PLAY_BUTTON);
-        this->setTimerText(""); // set empty text (no 0:00 for timer when no task is running)
-        timerName = "No task";
+        startStopLabel->setPixmap(playPixmap);
+        this->setTimerText(QString()); // set empty text (no 0:00 for timer when no task is running)
+        taskName = FloatingWidget::NO_TASK;
+        timerElapsed = 0;
     }
-    if (timerName.isEmpty()) {
-        timerName = "No task";
+    if (taskName.isEmpty()) {
+        taskName = FloatingWidget::NO_TASK;
     }
-    this->setTaskText(timerName);
+    this->setTaskText(taskName);
 }
 
 void FloatingWidget::startStopClicked() {
-    QString current = startStopLabel->text();
-    if (current == PLAY_BUTTON) {
-        emit playButtonClicked();
-        startStopLabel->setText(PAUSE_BUTTON);
-        return;
-    }
-    if (current == PAUSE_BUTTON) {
+    if (timerRunning) {
         emit pauseButtonClicked();
-        startStopLabel->setText(PLAY_BUTTON);
-        return;
+        startStopLabel->setPixmap(playPixmap);
+    }else{
+        emit playButtonClicked();
+        startStopLabel->setPixmap(pausePixmap);
     }
 }
 
@@ -76,14 +113,14 @@ void FloatingWidget::handleSpacingEvents() {
 //    qInfo("Size: %d x %d", size().width(), size().height());
     if (FloatingWidgetWasInitialised) {
         this->setUpdatesEnabled(false);
-        settings.setValue("floatingWidgetGeometry", saveGeometry()); // save window position
+        settings.setValue(QStringLiteral("floatingWidgetGeometry"), saveGeometry()); // save window position
         settings.sync();
         this->setUpdatesEnabled(true);
     }
 }
 
 void FloatingWidget::closeEvent(QCloseEvent *event) {
-    // TODO: this is copied from the MainWidget, not 100% sure we need it
+    // this is copied from the MainWidget
     hide(); // hide our window when X was pressed
     event->ignore(); // don't do the default action (which usually is app exit)
 }
@@ -165,39 +202,45 @@ void FloatingWidget::paintEvent(QPaintEvent *) {
     QFontMetrics metrics(usedFont);
 
     iconWidth = background.scaledToHeight(scaleToFit(this->height())).width();
-    textStartingPoint = (this->height() - metrics.boundingRect(taskText).height()) / 2;
+    startStopWidth = fontSize + margin;
+    timerTextWidth = metrics.boundingRect(timerText).width() + margin;
+
     textHeight = metrics.boundingRect(taskText).height();
+    textStartingPoint = (this->height() - textHeight) / 2;
+    taskTextWidth = metrics.boundingRect(taskText).width();
+
+    int maxTaskTextWidth = this->width() - (iconWidth + startStopWidth + timerTextWidth + margin * 4);
+
+    if (taskTextWidth > maxTaskTextWidth) {
+        displayedTaskText = metrics.elidedText(taskText, Qt::TextElideMode::ElideRight, maxTaskTextWidth);
+        taskTextWidth = maxTaskTextWidth + margin;
+    } else {
+        displayedTaskText = taskText;
+    }
 
     // special_offset is used, because PLAY and PAUSE buttons in default font are weirdly spaced
     int special_offset = 0;
-    if (startStopLabel->text() == PLAY_BUTTON) {
-        special_offset = -2;
-    }
-    if (startStopLabel->text() == PAUSE_BUTTON) {
-        special_offset = 2;
-    }
     special_offset *= fontSize/12;
 
     taskTextLabel->setFont(usedFont);
-    taskTextLabel->setText(taskText);
+    taskTextLabel->setText(displayedTaskText);
     taskTextLabel->setGeometry(iconWidth + margin,
                                textStartingPoint,
-                               metrics.boundingRect(taskText).width(),
+                               taskTextWidth,
                                textHeight
     );
 
-    startStopWidth = fontSize + margin;
     startStopLabel->setFont(usedFont);
-    startStopLabel->setGeometry(this->width() - startStopWidth - margin,
+    startStopLabel->setGeometry(this->width() - (startStopWidth + margin),
                                 textStartingPoint + special_offset,
                                 startStopWidth,
                                 startStopWidth
     );
 
-    timerTextWidth = metrics.boundingRect(timerText).width() + margin;
     timerTextLabel->setFont(usedFont);
     timerTextLabel->setText(timerText);
-    timerTextLabel->setGeometry(this->width() - startStopWidth - timerTextWidth - margin * 2,
+    timerTextLabel->setGeometry(this->width() - (startStopWidth + timerTextWidth + margin * 2),
+                                // ^this is from left, so we need to go negative on this one
                                 textStartingPoint,
                                 timerTextWidth,
                                 textHeight
@@ -220,7 +263,7 @@ QSize FloatingWidget::sizeHint() const {
 
 void FloatingWidget::open() {
     settings.sync();
-    restoreGeometry(settings.value("floatingWidgetGeometry").toByteArray());
+    restoreGeometry(settings.value(QStringLiteral("floatingWidgetGeometry")).toByteArray());
     show();
     raise();
     setWindowState((windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
@@ -238,14 +281,14 @@ bool FloatingWidget::isHidden() {
     return !this->isVisible();
 }
 
-void FloatingWidget::setTimerText(QString text) {
+void FloatingWidget::setTimerText(const QString text) {
     if(text != this->timerText) { // call update only when text actually changed
         this->timerText = text;
         this->update();
     }
 }
 
-void FloatingWidget::setTaskText(QString text) {
+void FloatingWidget::setTaskText(const QString text) {
     if(text != this->taskText) { // call update only when text actually changed
         this->taskText = text;
         this->update();
@@ -256,7 +299,12 @@ void FloatingWidget::setMenu(QMenu *contextMenu) {
     FloatingWidget::contextMenu = contextMenu;
 }
 
-void FloatingWidget::setIcon(QString iconPath) {
+void FloatingWidget::setIcon(const QString iconPath) {
     // FloatingWidget has no icon for now
     // if it had, it would be in the left corner
+}
+
+void FloatingWidget::setTimerElapsed(int timerElapsed)
+{
+    FloatingWidget::timerElapsed = timerElapsed;
 }

@@ -12,12 +12,22 @@
 
 #include <QString>
 
-QString getFirefoxConfigFilePath();
-QString getCurrentURLFromFirefoxConfig(QString &jsonConfig);
 
-void *readFileToMemory(const char *filename, size_t *readSize);
-QString parseJsRecoveryFilePath(const QString &recoveryFilePath);
-QString parseJsonlz4RecoveryFilePath(const QString &recoveryFilePath);
+class FirefoxUtils {
+private:
+    QString getFirefoxConfigFilePath();
+    QString getCurrentURLFromFirefoxConfig(const QString &jsonConfig, const QString &windowName);
 
-bool comparatorGreater(const std::pair<QString, time_t> &left, const std::pair<QString, time_t> &right);
-QString getCurrentURLFromFirefox();
+    void *readFileToMemory(const char *filename, size_t *readSize);
+    QString parseJsRecoveryFilePath(const QString &recoveryFilePath);
+    QString parseJsonlz4RecoveryFilePath(const QString &recoveryFilePath);
+    QString recoveryFilePath;
+    QString recoveryFileExtension;
+    QString activeUrl;
+    unsigned int retries;
+    const unsigned int MAX_RETRIES = 4;
+public:
+    FirefoxUtils();
+    QString getCurrentURLFromFirefox(QString);
+    static bool comparatorGreater(const std::pair<QString, time_t> &left, const std::pair<QString, time_t> &right);
+};

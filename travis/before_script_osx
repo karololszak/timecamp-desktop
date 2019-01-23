@@ -1,0 +1,4 @@
+#!/bin/sh -xe
+
+mkdir -p $TARGET
+cp CMakeProjectConfig.cmake.example CMakeProjectConfig.cmake

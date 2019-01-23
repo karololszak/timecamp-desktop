@@ -16,8 +16,8 @@ DbManager &DbManager::instance()
 DbManager::DbManager(QObject *parent) : QObject(parent)
 {
     qDebug() << "[DB] Starting DB manager!";
-    m_db = QSqlDatabase::addDatabase("QSQLITE");
-    QString dbLocation = QStandardPaths::standardLocations(QStandardPaths::AppLocalDataLocation).first() + "/" + DB_FILENAME;
+    m_db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"));
+    QString dbLocation = QStandardPaths::standardLocations(QStandardPaths::AppLocalDataLocation).constFirst() + "/" + DB_FILENAME;
     qDebug() << "[DB] Location: " << dbLocation;
     m_db.setDatabaseName(dbLocation);
 
@@ -49,8 +49,8 @@ void DbManager::prepareQueries()
     // but this will hopefully prevent crashes
     addAppQuery = QSqlQuery(m_db);
     getAppsQuery = QSqlQuery(m_db);
-    addAppQuery.prepare("INSERT INTO apps (ID, app_name, window_name, additional_info, start_time, end_time) VALUES (NULL, ?, ?, ?, ?, ?)");
-    getAppsQuery.prepare("SELECT app_name, window_name, additional_info, start_time, end_time FROM apps WHERE start_time > :lastSync LIMIT :maxCount");
+    addAppQuery.prepare(QStringLiteral("INSERT INTO apps (ID, app_name, window_name, additional_info, start_time, end_time) VALUES (NULL, ?, ?, ?, ?, ?)"));
+    getAppsQuery.prepare(QStringLiteral("SELECT app_name, window_name, additional_info, start_time, end_time FROM apps WHERE start_time > :lastSync LIMIT :maxCount"));
 }
 
 bool DbManager::createTable()
@@ -58,7 +58,7 @@ bool DbManager::createTable()
     bool TableCreated = true;
 
     QSqlQuery createTableQuery;
-    createTableQuery.prepare("CREATE TABLE \"apps\" ( `ID` INTEGER PRIMARY KEY AUTOINCREMENT, `app_name` TEXT, `window_name` TEXT, `additional_info` TEXT, `start_time` INTEGER NOT NULL, `end_time` INTEGER NOT NULL )");
+    createTableQuery.prepare(QStringLiteral("CREATE TABLE \"apps\" ( `ID` INTEGER PRIMARY KEY AUTOINCREMENT, `app_name` TEXT, `window_name` TEXT, `additional_info` TEXT, `start_time` INTEGER NOT NULL, `end_time` INTEGER NOT NULL )"));
 
     if (!createTableQuery.exec()) {
         qDebug() << "[DB] Warning: Couldn't create the table: one might already exist.";
@@ -110,8 +110,8 @@ QVector<AppData> DbManager::getAppsSinceLastSync(qint64 last_sync)
         return appList; // return empty appList if DB is not opened
     }
 
-    getAppsQuery.bindValue(":lastSync", last_sync);
-    getAppsQuery.bindValue(":maxCount", MAX_ACTIVITIES_BATCH_SIZE);
+    getAppsQuery.bindValue(QStringLiteral(":lastSync"), last_sync);
+    getAppsQuery.bindValue(QStringLiteral(":maxCount"), MAX_ACTIVITIES_BATCH_SIZE);
 
     if (getAppsQuery.exec()) {
         int qSize = getAppsQuery.size(); // get count of activities
@@ -122,11 +122,11 @@ QVector<AppData> DbManager::getAppsSinceLastSync(qint64 last_sync)
 
         while (getAppsQuery.next()) {
             AppData tempApp;
-            tempApp.setAppName(getAppsQuery.value("app_name").toString());
-            tempApp.setWindowName(getAppsQuery.value("window_name").toString());
-            tempApp.setAdditionalInfo(getAppsQuery.value("additional_info").toString());
-            tempApp.setStart(getAppsQuery.value("start_time").toLongLong());
-            tempApp.setEnd(getAppsQuery.value("end_time").toLongLong());
+            tempApp.setAppName(getAppsQuery.value(QStringLiteral("app_name")).toString());
+            tempApp.setWindowName(getAppsQuery.value(QStringLiteral("window_name")).toString());
+            tempApp.setAdditionalInfo(getAppsQuery.value(QStringLiteral("additional_info")).toString());
+            tempApp.setStart(getAppsQuery.value(QStringLiteral("start_time")).toLongLong());
+            tempApp.setEnd(getAppsQuery.value(QStringLiteral("end_time")).toLongLong());
             appList.push_back(tempApp);
         }
         appList.squeeze(); // finally remove empty elements (because reserve is just a hint)
@@ -144,4 +144,14 @@ void DbManager::clearTaskList() {
 
 const QHash<qint64, Task *> &DbManager::getTaskList() const {
     return taskList;
+}
+
+Task *DbManager::getTaskById(qint64 taskId) {
+    return taskList.value(taskId);
+}
+
+void DbManager::loginLogout(bool isLoggedIn) {
+    if (!isLoggedIn) {
+        this->clearTaskList();
+    }
 }

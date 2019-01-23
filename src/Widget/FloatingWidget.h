@@ -28,9 +28,10 @@ public slots:
     void setIcon(QString iconPath) override;
     bool isHidden() override;
     void showContextMenu(const QPoint &);
-    void emitTaskNameClicked();
+
     void startStopClicked();
     void updateWidgetStatus(bool, QString);
+    void setTimerElapsed(int timerElapsed);
 
 signals:
     void taskNameClicked();
@@ -47,6 +48,7 @@ protected:
     bool mouseInGrip(QPoint mousePos);
 
 private:
+    int timerElapsed = 0;
     int radius = 4;
     int margin = 4;
     bool FloatingWidgetWasInitialised = false;
@@ -54,12 +56,14 @@ private:
     bool resizing;
     QPixmap background;
     QString taskText;
+    QString displayedTaskText;
     QString timerText;
     QPoint dragPosition;
     QPoint oldPos;
     QSize gripSize;
     QSettings settings;
     int scaleToFit(double height);
+    void oneSecTimerTimeout();
 
     QLabel *timerTextLabel;
     ClickableLabel *taskTextLabel;
@@ -71,8 +75,14 @@ private:
     int iconWidth;
     int textStartingPoint;
     int textHeight;
+    int taskTextWidth;
     int startStopWidth;
     int timerTextWidth;
+
+    QPixmap playPixmap;
+    QPixmap pausePixmap;
+    bool timerRunning = false;
+    static const constexpr char* NO_TASK = "no task";
 };
 
 #endif //TIMECAMPDESKTOP_FLOATINGWIDGET_H
