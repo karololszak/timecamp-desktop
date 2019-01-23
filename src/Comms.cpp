@@ -383,7 +383,7 @@ void Comms::settingsReply(QByteArray buffer)
 
 void Comms::getTasks()
 {
-    QNetworkRequest request(getApiUrl("/tasks/exclude_archived/0", "json"));
+    QNetworkRequest request(getApiUrl("/tasks", "json"));
     commsReplies.insert(request.url(), &Comms::tasksReply);
     this->netRequest(request);
 }
