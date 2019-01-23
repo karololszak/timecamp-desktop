@@ -33,7 +33,7 @@ public:
 
     bool updateApiKeyFromSettings();
 
-    QUrl getApiUrl(QString, QString);
+    QString getApiUrl(QString, QString);
     const QString &getApiKey() const;
 
 protected:

@@ -25,13 +25,13 @@ Comms::Comms(QObject *parent) : QObject(parent)
     qnam.setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
 }
 
-QUrl Comms::getApiUrl(QString endpoint, QString format = "")
+QString Comms::getApiUrl(QString endpoint, QString format = "")
 {
     QString URL = QString(API_URL) + endpoint + "/api_token/" + apiKey;
     if (!format.isEmpty()) {
         URL += "/format/" + format;
     }
-    return QUrl(URL);
+    return URL;
 }
 
 void Comms::timedUpdates()
@@ -217,7 +217,8 @@ void Comms::sendAppData(QVector<AppData> *appList)
 //    qDebug() << params.toString();
 //    qDebug() << "--------------\n";
 
-    QNetworkRequest request(getApiUrl("/activity"));
+    QUrl serviceURL(getApiUrl("/activity"));
+    QNetworkRequest request(serviceURL);
 
     QUrl URLParams;
     URLParams.setQuery(params);
@@ -277,7 +278,8 @@ void Comms::getUserInfo()
         return;
     }
 
-    QNetworkRequest request(getApiUrl("/user", "json"));
+    QUrl serviceURL(getApiUrl("/user", "json"));
+    QNetworkRequest request(serviceURL);
 
     this->netRequest(request, QNetworkAccessManager::GetOperation, &Comms::userInfoReply);
 }
@@ -318,7 +320,7 @@ void Comms::getSettings()
 //    primary_group_id = 134214;
     QString primary_group_id_str = settings.value("SETT_PRIMARY_GROUP_ID").toString();
 
-    QUrl serviceURL = getApiUrl("/group/" + primary_group_id_str + "/setting", "json");
+    QUrl serviceURL(getApiUrl("/group/" + primary_group_id_str + "/setting", "json"));
 
     QUrlQuery params;
     params.addQueryItem("api_token", apiKey);
@@ -398,7 +400,8 @@ void Comms::getTasks()
         return;
     }
 
-    QNetworkRequest request(getApiUrl("/tasks", "json"));
+    QUrl serviceURL(getApiUrl("/tasks", "json"));
+    QNetworkRequest request(serviceURL);
 
     this->netRequest(request, QNetworkAccessManager::GetOperation, &Comms::tasksReply);
 }
