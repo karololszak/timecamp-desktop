@@ -244,8 +244,7 @@ void Comms::sendAppData(QVector<AppData> *appList)
     request.setRawHeader("Content-Type", "application/x-www-form-urlencoded");
     request.setRawHeader("Content-Length", postDataSize);
 
-    commsReplies.insert(request.url(), &Comms::appDataReply);
-    this->netRequest(request, QNetworkAccessManager::PostOperation, jsonString);
+    this->netRequest(request, QNetworkAccessManager::PostOperation, &Comms::appDataReply, jsonString);
 }
 
 void Comms::appDataReply(QNetworkReply *reply)
@@ -291,8 +290,7 @@ void Comms::setCurrentTime(qint64 current_time)
 void Comms::getUserInfo()
 {
     QNetworkRequest request(getApiUrl("/user", "json"));
-    commsReplies.insert(request.url(), &Comms::userInfoReply);
-    this->netRequest(request, QNetworkAccessManager::GetOperation);
+    this->netRequest(request, QNetworkAccessManager::GetOperation, &Comms::userInfoReply);
 }
 
 void Comms::userInfoReply(QNetworkReply *reply)
@@ -370,8 +368,7 @@ void Comms::getSettings()
 
     QNetworkRequest request(serviceURL);
 
-    commsReplies.insert(request.url(), &Comms::settingsReply);
-    this->netRequest(request, QNetworkAccessManager::GetOperation);
+    this->netRequest(request, QNetworkAccessManager::GetOperation, &Comms::settingsReply);
 }
 
 void Comms::settingsReply(QNetworkReply *reply)
@@ -405,8 +402,7 @@ void Comms::settingsReply(QNetworkReply *reply)
 void Comms::getTasks()
 {
     QNetworkRequest request(getApiUrl("/tasks", "json"));
-    commsReplies.insert(request.url(), &Comms::tasksReply);
-    this->netRequest(request, QNetworkAccessManager::GetOperation);
+    this->netRequest(request, QNetworkAccessManager::GetOperation, &Comms::tasksReply);
 }
 
 void Comms::tasksReply(QNetworkReply *reply)
@@ -445,19 +441,17 @@ void Comms::genericReply(QNetworkReply *reply)
     }
 
     emit gotGenericReply(reply);
-
-    QString stringUrl = reply->url().toString();
-    auto &fn = commsReplies[stringUrl];
-    if(fn) {
-        fn(this, reply);
-    }
 }
 
 
-void Comms::netRequest(QNetworkRequest request, QNetworkAccessManager::Operation netOp, QByteArray data)
+void Comms::netRequest(QNetworkRequest request, QNetworkAccessManager::Operation netOp, ReplyHandler callback, QByteArray data)
 {
     // connect the callback function first
+    QMetaObject::Connection conn1;
     QMetaObject::Connection conn2;
+    if(callback != nullptr) {
+        conn1 = QObject::connect(&qnam, &QNetworkAccessManager::finished, this, callback);
+    }
     conn2 = QObject::connect(&qnam, &QNetworkAccessManager::finished, this, &Comms::genericReply);
 
     // make a copy of the request URL for the logger
@@ -497,6 +491,9 @@ void Comms::netRequest(QNetworkRequest request, QNetworkAccessManager::Operation
 
     // unhook callback - so that next run of this func can set a new callback
 
+    if(callback != nullptr) {
+        QObject::disconnect(conn1);
+    }
     QObject::disconnect(conn2);
 }
 

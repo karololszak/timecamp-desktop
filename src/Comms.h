@@ -29,7 +29,8 @@ public:
     void timedUpdates();
     void tryToSendAppData();
 
-    void netRequest(QNetworkRequest, QNetworkAccessManager::Operation, QByteArray);
+    void netRequest(QNetworkRequest, QNetworkAccessManager::Operation,
+                    void (Comms::*)(QNetworkReply *), QByteArray = nullptr);
 
     bool updateApiKeyFromSettings();
 
@@ -52,7 +53,6 @@ private:
     int root_group_id;
     int primary_group_id;
     QNetworkAccessManager qnam;
-    QHash<QUrl, std::function<void(Comms *, QNetworkReply *)>> commsReplies; // see https://stackoverflow.com/a/7582574/8538394
 
 signals:
     void DbSaveApp(AppData *);
@@ -67,5 +67,8 @@ public slots:
     void checkBatchSize();
     void clearLastApp();
 };
+
+typedef void (Comms::*ReplyHandler)(QNetworkReply *reply);
+// https://isocpp.org/wiki/faq/pointers-to-members#typedef-for-ptr-to-memfn
 
 #endif // COMMS_H
