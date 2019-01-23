@@ -1,4 +1,7 @@
 #!/bin/sh -xe
 
+rm -rf ${TARGET:?}/"${BUNDLE_NAME}"
+rm -rf ${TARGET:?}/${DMG_NAME} # dmg HAS TO BE DELETED
+
 mkdir -p $TARGET
 cp CMakeProjectConfig.cmake.example CMakeProjectConfig.cmake
