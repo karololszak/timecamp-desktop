@@ -32,10 +32,10 @@ WindowEventsManager::WindowEventsManager(QObject *parent) : QObject(parent)
 #else
     captureEventsThread = new WindowEvents_M();
 #endif
-    QObject::connect(captureEventsThread, &WindowEvents::noLongerAwayShowPopup, this, &WindowEventsManager::awayPopup);
+    QObject::connect(captureEventsThread, &WindowEvents::noLongerAway, this, &WindowEventsManager::noLongerAway);
 }
 
-void WindowEventsManager::awayPopup(unsigned long howLongWasAwayMS)
+void WindowEventsManager::noLongerAway(unsigned long howLongWasAwayMS)
 {
     QMessageBox msgBox;
     msgBox.setTextInteractionFlags(Qt::NoTextInteraction);

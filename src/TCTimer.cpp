@@ -1,21 +1,64 @@
 #include "TCTimer.h"
-#include "Formatting.h"
 
 TCTimer::TCTimer(Comms *comms)
     : comms(comms)
 {
     clearData();
 
+    lastStatusCheck = QDateTime::currentMSecsSinceEpoch();
+
+    // we can't be calling API if we don't have the key; try to set the key
+    comms->updateApiKeyFromSettings();
     // connect the generic reply from Comms
     QObject::connect(comms, &Comms::gotGenericReply, this, &TCTimer::decideTimerReply);
 }
 
+void TCTimer::start(qint64 taskID, qint64 entryID, qint64 startedAtInMS)
+{
+    QUrlQuery params = comms->getApiParams();
+    params.addQueryItem("action", "start");
+    if (taskID > 0) {
+        params.addQueryItem("task_id", QString::number(taskID));
+    }
+    if (entryID > 0) {
+        params.addQueryItem("task_id", QString::number(entryID));
+    }
+    if (startedAtInMS > 0) {
+        params.addQueryItem("started_at", QDateTime::fromMSecsSinceEpoch(startedAtInMS).toString(Qt::ISODate).replace("T", " "));
+    }
+    comms->postRequest(comms->getApiUrl("/timer", "json"), params);
+}
+
+void TCTimer::stop(qint64 timerID, qint64 stoppedAtInMS)
+{
+    QUrlQuery params = comms->getApiParams();
+    params.addQueryItem("action", "stop");
+    if (timerID > 0) {
+        params.addQueryItem("timer_id", QString::number(timerID));
+    }
+    if (stoppedAtInMS > 0) {
+        params.addQueryItem("stopped_at", QDateTime::fromMSecsSinceEpoch(stoppedAtInMS).toString(Qt::ISODate).replace("T", " "));
+    }
+    comms->postRequest(comms->getApiUrl("/timer", "json"), params);
+}
+
+void TCTimer::status()
+{
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (lastStatusCheck - now < 1000) { // if called less than a second ago
+        return;
+    }
+    lastStatusCheck = now;
+    QUrlQuery params = comms->getApiParams();
+    params.addQueryItem("action", "status");
+    comms->postRequest(comms->getApiUrl("/timer", "json"), params);
+}
+
 void TCTimer::decideTimerReply(QNetworkReply *reply, QByteArray buffer)
 {
-    // this reply can be caught and forwarded from the built-in WebBrowser and we can still parse it here
     QString stringUrl = reply->url().toString();
     if (stringUrl.contains("/timer")) {
-        // TODO: this needs some better checks
+        // this needs some better checks
         timerStatusReply(std::move(buffer));
     }
 }
@@ -45,7 +88,7 @@ void TCTimer::timerStatusReply(QByteArray buffer)
         timer_id = rootObject.value("timer_id").toString().toInt();
         external_task_id = rootObject.value("external_task_id").toString().toInt();
         name = rootObject.value("name").toString();
-        if(task_id != 0) {
+        if(name.isEmpty() && task_id != 0) {
             Task *taskObj = DbManager::instance().getTaskById(task_id);
             if(taskObj != nullptr) {
                 name = taskObj->getName();
@@ -83,23 +126,23 @@ void TCTimer::clearData()
 void TCTimer::startTaskByTaskObj(Task *task, bool force)
 {
     if (force || timer_id == 0 || timer_id != task->getTaskId()) {
-        comms->timerStart(task->getTaskId());
+        this->start(task->getTaskId());
     }
 }
 
 void TCTimer::startTaskByID(qint64 taskID)
 {
-    comms->timerStart(taskID);
+    this->start(taskID);
 }
 
 void TCTimer::startTimerSlot()
 {
-    comms->timerStart();
+    this->start();
 }
 
 void TCTimer::stopTimerSlot()
 {
-    comms->timerStop();
+    this->stop();
 }
 
 void TCTimer::startIfNotRunningYet()

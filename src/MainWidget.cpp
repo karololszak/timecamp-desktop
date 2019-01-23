@@ -100,7 +100,7 @@ void MainWidget::closeEvent(QCloseEvent *event)
     event->ignore(); // don't do the default action (which usually is app exit)
 }
 
-void MainWidget::webpageDataUpdateOnInterval()
+void MainWidget::twoSecTimerTimeout()
 {
     if (loggedIn) {
         emit checkIsIdle();
@@ -384,19 +384,8 @@ void MainWidget::fetchAPIkey()
     QTWEPage->runJavaScript("typeof(window.apiService) !== 'undefined' && window.apiService.getToken().$$state.value", [this](const QVariant &v)
     {
 //        qDebug() << "API Key: " << v.toString();
-
-        if(v.toBool()) { // http://doc.qt.io/qt-5/qvariant.html#toBool
-            // is true for many types when non-zero; and (quote):
-
-            // "[returns true] if the variant has type QString or QByteArray
-            // and its lower-case content is not one of the following:
-            // empty, "0" or "false"; otherwise returns false"
-
-            setApiKey(v.toString());
-        }
+        setApiKey(v.toString());
     });
-    // no problem if it fails, since it runs in a loop "webpageDataUpdateOnInterval"
-    // and that handles failed states (empty or "false" api key)
 }
 
 

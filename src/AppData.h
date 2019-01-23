@@ -9,7 +9,7 @@ public:
     AppData();
     AppData(QString appName, QString windowName, QString additionalInfo);
 
-    const QString getAppName() const;
+    const QString &getAppName() const;
     void setAppName(const QString &appName);
 
     const QString &getWindowName() const;

@@ -36,7 +36,7 @@ public:
     ~MainWidget() override;
     void init();
 
-    void webpageDataUpdateOnInterval();
+    void twoSecTimerTimeout();
     QHash<QString, int> LastTasks;
     QJsonDocument LastTasksCache;
 

@@ -14,7 +14,7 @@ public:
     bool isIdle = false;
 
 signals:
-    void noLongerAwayShowPopup(unsigned long); // Signals cannot be declared virtual
+    void noLongerAway(unsigned long); // Signals cannot be declared virtual
 
 protected:
     virtual void run() = 0;

@@ -68,9 +68,7 @@ protected:
     explicit TrayManager(QObject *parent = nullptr);
 
 private:
-#ifndef Q_OS_MACOS
     QSystemTrayIcon *trayIcon = nullptr;
-#endif
     QMenu *trayMenu;
     QSettings settings;
 
