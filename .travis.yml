@@ -15,8 +15,7 @@ matrix:
     env: SRC="cmake-build-relwithdebinfo" TARGET="cmake-build-relwithdebinfo" CMAKE_NAME="TimeCampDesktop" BUNDLE_NAME="TimeCamp Desktop.app" DMG_NAME="TimeCampSetup_macOS.dmg"
 
 git:
-  depth: 5
-  submodules: false
+  depth: 3
   quiet: true
 
 branches:
@@ -36,9 +35,6 @@ addons:
 #    update: true
 
 before_install:
-- sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
-- git submodule sync
-- git submodule update --init --recursive
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source ./travis/before_install_linux ; fi
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source ./travis/before_install_osx ; fi
 
