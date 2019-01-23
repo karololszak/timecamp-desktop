@@ -77,10 +77,8 @@ int main(int argc, char *argv[])
     qInfo() << "Loc: " << QCoreApplication::applicationDirPath() << '\n';
     qInfo() << "qt.conf " << QDir(QCoreApplication::applicationDirPath()).exists("qt.conf") << '\n';
 
-    // check if it's a first run, and i.e. on Mac ask for permissions
     firstRun();
 
-    // set the app icon
     QIcon appIcon = QIcon(MAIN_ICON);
     appIcon.addFile(":/Icons/AppIcon_256.png");
     appIcon.addFile(":/Icons/AppIcon_128.png");
@@ -112,7 +110,8 @@ int main(int argc, char *argv[])
     // send updates from DB to server
     Comms *comms = &Comms::instance();
     auto *syncDBtimer = new QTimer();
-    QObject::connect(syncDBtimer, &QTimer::timeout, comms, &Comms::timedUpdates);
+    //QObject::connect(timer, SIGNAL(timeout()), &Comms::instance(), SLOT(timedUpdates())); // Qt4
+    QObject::connect(syncDBtimer, &QTimer::timeout, comms, &Comms::timedUpdates); // Qt5
 
     // Away time bindings
     QObject::connect(windowEventsManager, &WindowEventsManager::updateAfterAwayTime, comms, &Comms::timedUpdates);
@@ -127,11 +126,12 @@ int main(int argc, char *argv[])
 
     // 2 sec timer for updating submenu and other features
     auto *twoSecondTimer = new QTimer();
-    QObject::connect(twoSecondTimer, &QTimer::timeout, &mainWidget, &MainWidget::twoSecTimerTimeout);
+    //QObject::connect(twoSecondTimer, SIGNAL(timeout()), &mainWidget, SLOT(twoSecTimerTimeout())); // Qt4
+    QObject::connect(twoSecondTimer, &QTimer::timeout, &mainWidget, &MainWidget::twoSecTimerTimeout); // Qt5
     // above timeout triggers func that emits checkIsIdle when logged in
-    QObject::connect(&mainWidget, &MainWidget::checkIsIdle, windowEventsManager->getCaptureEventsThread(), &WindowEvents::checkIdleStatus);
+    QObject::connect(&mainWidget, &MainWidget::checkIsIdle, windowEventsManager->getCaptureEventsThread(), &WindowEvents::checkIdleStatus); // Qt5
 
-    // sync DB on page change
+    //
     QObject::connect(&mainWidget, &MainWidget::pageStatusChanged, [&syncDBtimer](bool loggedIn, QString title)
     {
         if (!loggedIn) {
@@ -147,10 +147,8 @@ int main(int argc, char *argv[])
         }
     });
 
-    // the smart widget that floats around
     auto *theWidget = new FloatingWidget(); // FloatingWidget can't be bound to mainwidget (it won't set state=visible when main is hidden)
 
-    // the timer that syncs via API
     auto *TimeCampTimer = new TCTimer(comms);
     QObject::connect(syncDBtimer, &QTimer::timeout, TimeCampTimer, &TCTimer::status); // checking Timer Status on the same interval as DB Sync
 
@@ -196,8 +194,8 @@ int main(int argc, char *argv[])
 
     trayManager->setWidget(theWidget);
     trayManager->setupSettings();
-    comms->timedUpdates(); // fetch userInfo, userSettings, send apps since last update
     mainWidget.init(); // init the WebView
+    comms->timedUpdates(); // fetch userInfo, userSettings, send apps since last update
 
     // now timers
     syncDBtimer->start(30 * 1000); // sync DB every 30s
