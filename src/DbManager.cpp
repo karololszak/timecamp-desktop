@@ -145,7 +145,3 @@ void DbManager::clearTaskList() {
 const QHash<qint64, Task *> &DbManager::getTaskList() const {
     return taskList;
 }
-
-Task *DbManager::getTaskById(qint64 taskId) {
-    return taskList.value(taskId);
-}

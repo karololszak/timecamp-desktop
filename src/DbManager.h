@@ -30,10 +30,9 @@ public:
 
     QVector<AppData> getAppsSinceLastSync(qint64 last_sync);
 
-    QHash<qint64, Task*> taskList; // taskID, taskObj with data
+    QHash<qint64, Task*> taskList;
 
     const QHash<qint64, Task *> &getTaskList() const;
-    Task * getTaskById(qint64 taskId);
 
     void addToTaskList(Task*);
     void clearTaskList();

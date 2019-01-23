@@ -102,7 +102,9 @@ int main(int argc, char *argv[])
     // create tray manager
     TrayManager *trayManager = &TrayManager::instance();
     QObject::connect(&mainWidget, &MainWidget::pageStatusChanged, trayManager, &TrayManager::loginLogout);
+    QObject::connect(&mainWidget, &MainWidget::timerStatusChanged, trayManager, &TrayManager::updateStopMenu);
     QObject::connect(&mainWidget, &MainWidget::lastTasksChanged, trayManager, &TrayManager::updateRecentTasks);
+    QObject::connect(trayManager, &TrayManager::taskSelected, &mainWidget, &MainWidget::startTaskByID);
     QObject::connect(trayManager, &TrayManager::pcActivitiesValueChanged, windowEventsManager, &WindowEventsManager::startOrStopThread);
 
     // send updates from DB to server
@@ -124,10 +126,9 @@ int main(int argc, char *argv[])
     // Save apps to sqlite on signal-slot basis
     QObject::connect(comms, &Comms::DbSaveApp, dbManager, &DbManager::saveAppToDb);
     QObject::connect(comms, &Comms::DbSaveApp, autoTracking, &AutoTracking::checkAppKeywords);
+    QObject::connect(autoTracking, &AutoTracking::foundTask, &mainWidget, &MainWidget::startTaskByTaskObj);
+    QObject::connect(&mainWidget, &MainWidget::startTaskViaObjToID, &mainWidget, &MainWidget::startTaskByID);
 
-    // Starting Timer
-    QObject::connect(autoTracking, &AutoTracking::foundTask, TimeCampTimer, &TCTimer::startTaskByTaskObj);
-    QObject::connect(trayManager, &TrayManager::taskSelected, TimeCampTimer, &TCTimer::startTaskByID);
 
     // 2 sec timer for updating submenu and other features
     auto *twoSecondTimer = new QTimer();
@@ -138,12 +139,10 @@ int main(int argc, char *argv[])
 
 
     auto hotkeyNewTimer = new QHotkey(QKeySequence(KB_SHORTCUTS_START_TIMER), true, &app);
-    QObject::connect(hotkeyNewTimer, &QHotkey::activated, TimeCampTimer, &TCTimer::startTimerSlot);
-    QObject::connect(hotkeyNewTimer, &QHotkey::activated, &mainWidget, &MainWidget::chooseTask);
+    QObject::connect(hotkeyNewTimer, &QHotkey::activated, &mainWidget, &MainWidget::startTask);
 
     auto hotkeyStopTimer = new QHotkey(QKeySequence(KB_SHORTCUTS_STOP_TIMER), true, &app);
-    QObject::connect(hotkeyStopTimer, &QHotkey::activated, TimeCampTimer, &TCTimer::stopTimerSlot);
-    QObject::connect(hotkeyStopTimer, &QHotkey::activated, &mainWidget, &MainWidget::refreshTimerStatus);
+    QObject::connect(hotkeyStopTimer, &QHotkey::activated, &mainWidget, &MainWidget::stopTask);
 
     auto hotkeyOpenWindow = new QHotkey(QKeySequence(KB_SHORTCUTS_OPEN_WINDOW), true, &app);
     QObject::connect(hotkeyOpenWindow, &QHotkey::activated, trayManager, &TrayManager::openCloseWindowAction);
@@ -167,32 +166,10 @@ int main(int argc, char *argv[])
     // everything connected via QObject, now heavy lifting
     trayManager->setupTray(&mainWidget); // create tray
     auto *theWidget = new FloatingWidget(); // FloatingWidget can't be bound to mainwidget (it won't set state=visible when main is hidden)
-
-    // Timer start
-    QObject::connect(theWidget, &FloatingWidget::taskNameClicked, TimeCampTimer, &TCTimer::startTimerSlot);
-    QObject::connect(theWidget, &FloatingWidget::taskNameClicked, &mainWidget, &MainWidget::chooseTask);
-
-    QObject::connect(theWidget, &FloatingWidget::playButtonClicked, TimeCampTimer, &TCTimer::startTimerSlot);
-    QObject::connect(theWidget, &FloatingWidget::playButtonClicked, &mainWidget, &MainWidget::chooseTask);
-
-    QObject::connect(trayManager, &TrayManager::startTaskClicked, TimeCampTimer, &TCTimer::startTimerSlot);
-    QObject::connect(trayManager, &TrayManager::startTaskClicked, &mainWidget, &MainWidget::chooseTask);
-
-    // Timer stop
-    QObject::connect(theWidget, &FloatingWidget::pauseButtonClicked, TimeCampTimer, &TCTimer::stopTimerSlot);
-    QObject::connect(theWidget, &FloatingWidget::pauseButtonClicked, &mainWidget, &MainWidget::refreshTimerStatus);
-
-    QObject::connect(trayManager, &TrayManager::stopTaskClicked, TimeCampTimer, &TCTimer::stopTimerSlot);
-    QObject::connect(trayManager, &TrayManager::stopTaskClicked, &mainWidget, &MainWidget::refreshTimerStatus);
-
-    // Timer listeners
-    QObject::connect(TimeCampTimer, &TCTimer::timerStatusChanged, trayManager, &TrayManager::updateStopMenu);
-    QObject::connect(TimeCampTimer, &TCTimer::timerStatusChanged, theWidget, &FloatingWidget::updateWidgetStatus);
-    QObject::connect(TimeCampTimer, &TCTimer::timerStatusChanged, &mainWidget, &MainWidget::shouldRefreshTimerStatus);
-    QObject::connect(TimeCampTimer, &TCTimer::timerElapsedSeconds, theWidget, &FloatingWidget::setTimerElapsed);
-
-    QObject::connect(&mainWidget, &MainWidget::updateTimerStatus, TimeCampTimer, &TCTimer::timerStatusReply);
-
+    QObject::connect(&mainWidget, &MainWidget::timerStatusChanged, theWidget, &FloatingWidget::updateWidgetStatus);
+    QObject::connect(theWidget, &FloatingWidget::taskNameClicked, &mainWidget, &MainWidget::startTask);
+    QObject::connect(theWidget, &FloatingWidget::playButtonClicked, &mainWidget, &MainWidget::startTask);
+    QObject::connect(theWidget, &FloatingWidget::pauseButtonClicked, &mainWidget, &MainWidget::stopTask);
     trayManager->setWidget(theWidget);
     trayManager->setupSettings();
     mainWidget.init(); // init the WebView
