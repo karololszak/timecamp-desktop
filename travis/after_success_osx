@@ -12,5 +12,3 @@ macdeployqt "${BUNDLE_NAME}" -dmg
 python /tmp/macdeployqtfix.py $TARGET/"TimeCamp Desktop.app" /usr/local/Cellar/qt/$HOMEBREW_QT5_VERSION/
 
 cd ..
-
-zip -r Release-"$TRAVIS_OS_NAME".zip $TARGET
