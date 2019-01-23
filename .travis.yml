@@ -43,10 +43,9 @@ script:
   - cd $SRC
   - cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -G "Unix Makefiles" "../"
   - cd ../
-  - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then cmake --build $SRC --target "${CMAKE_NAME}" --; fi' # regular build
-  - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then build-wrapper-linux-x86-64 --out-dir "${TARGET}" cmake --build $SRC --target "${CMAKE_NAME}" --; fi' # build
+  - build-wrapper-linux-x86-64 --out-dir "${TARGET}" cmake --build $SRC --target "${CMAKE_NAME}" -- # build
   - tree
-  - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then sonar-scanner; fi' # sonar only on non-PRs
+  - sonar-scanner
   
 after_success:
   - cp $SRC/"${CMAKE_NAME}" $TARGET"/usr/bin/""${BUNDLE_NAME}" # copy the binary
