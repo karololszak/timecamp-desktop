@@ -26,14 +26,7 @@ branches:
 addons:
   sonarcloud:
     organization: "timecamp-github" # the key of the org you chose at step #3
-  homebrew:
-    packages:
-      - cmake
-      - tree
-      - ninja
-      - qt
-    update: true
-    
+
 before_install:
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source ./travis/before_install_linux ; fi
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source ./travis/before_install_osx ; fi

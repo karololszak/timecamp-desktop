@@ -1,11 +1,10 @@
 #!/bin/sh -xe
 
-#we use travis' addons system now
-#if ! brew ls --version cmake &>/dev/null; then
-#	brew install cmake
-#else
-#	brew upgrade cmake
-#fi
+if ! brew ls --version cmake &>/dev/null; then
+	brew install cmake
+else
+	brew upgrade cmake
+fi
 
 # we use travis' node
 #brew install node
@@ -18,11 +17,10 @@ nvm use 8
 nvm alias default 8
 npm install --global create-dmg
 
-#we use travis' addons system now
-#brew install tree
-#brew install ninja
-#
-#brew install qt
+brew install tree
+brew install ninja
+
+brew install qt
 brew link --force qt
 export HOMEBREW_QT5_VERSION=$(brew list --versions qt | rev | cut -d' ' -f1 | rev)
 sudo ln -s /usr/local/Cellar/qt/$HOMEBREW_QT5_VERSION/mkspecs /usr/local/mkspecs
