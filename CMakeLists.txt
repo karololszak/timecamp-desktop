@@ -52,7 +52,6 @@ find_package(Qt5Sql REQUIRED)
 
 if (UNIX AND NOT APPLE)
     find_package(Qt5X11Extras REQUIRED)
-    find_package(Qt5DBus REQUIRED)
     message("x11 extras loaded")
 elseif (APPLE)
     find_package(qt5macextras REQUIRED)
@@ -134,7 +133,7 @@ if (UNIX AND NOT APPLE)
     list(APPEND TC_LIBS
             "-lX11 -lXss"
             )
-    set(Qt5_OS_LIBRARIES Qt5::X11Extras Qt5::DBus)
+    set(Qt5_OS_LIBRARIES Qt5::X11Extras)
 endif ()
 
 if (APPLE)
@@ -152,40 +151,31 @@ if (APPLE)
 endif ()
 
 # QHotkey
-set(QHotkey_PATH "third-party/vendor/de/skycoder42/qhotkey/QHotkey")
+set(QHOTKEY_PATH "third-party/vendor/de/skycoder42/qhotkey/QHotkey")
 list(APPEND SOURCE_FILES
-        "${QHotkey_PATH}/QHotkey"
-        "${QHotkey_PATH}/qhotkey.cpp"
-        "${QHotkey_PATH}/qhotkey_p.h"
+        "${QHOTKEY_PATH}/QHotkey"
+        "${QHOTKEY_PATH}/qhotkey.cpp"
+        "${QHOTKEY_PATH}/qhotkey_p.h"
         )
 
-set(QSingleInstance_PATH "third-party/vendor/de/skycoder42/qsingleinstance/QSingleInstance")
+set(QSINGLEINSTANCE_PATH "third-party/vendor/de/skycoder42/qsingleinstance/QSingleInstance")
 list(APPEND SOURCE_FILES
-        "${QSingleInstance_PATH}/clientinstance.cpp"
-        "${QSingleInstance_PATH}/qsingleinstance.cpp"
-        "${QSingleInstance_PATH}/qsingleinstance_p.cpp"
+        "${QSINGLEINSTANCE_PATH}/clientinstance.cpp"
+        "${QSINGLEINSTANCE_PATH}/qsingleinstance.cpp"
+        "${QSINGLEINSTANCE_PATH}/qsingleinstance_p.cpp"
         )
-
-set(QTaskbarControl_PATH "third-party/vendor/de/skycoder42/qtaskbarcontrol")
-list(APPEND SOURCE_FILES
-    "${QTaskbarControl_PATH}/qtaskbarcontrol.cpp"
-    "${QTaskbarControl_PATH}/qtaskbarcontrol_p.h"
-    )
 
 if (WIN32)
     list(APPEND SOURCE_FILES
-            "${QHotkey_PATH}/qhotkey_win.cpp"
-            "${QTaskbarControl_PATH}/qtaskbarcontrol_win.cpp"
+            "${QHOTKEY_PATH}/qhotkey_win.cpp"
             )
 elseif (UNIX AND NOT APPLE)
     list(APPEND SOURCE_FILES
-            "${QHotkey_PATH}/qhotkey_x11.cpp"
-        "${QTaskbarControl_PATH}/qtaskbarcontrol_x11.cpp"
+            "${QHOTKEY_PATH}/qhotkey_x11.cpp"
             )
 elseif (APPLE)
     list(APPEND SOURCE_FILES
-            "${QHotkey_PATH}/qhotkey_mac.cpp"
-        "${QTaskbarControl_PATH}/qtaskbarcontrol_mac.mm"
+            "${QHOTKEY_PATH}/qhotkey_mac.cpp"
             )
 endif ()
 

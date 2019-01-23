@@ -61,12 +61,12 @@ void WindowEventsManager::awayPopup(unsigned long howLongWasAwayMS)
 
     // use a new loop and process bg events
     QEventLoop loop;
-    QMetaObject::Connection dialogFinishedConn = QObject::connect(&msgBox, &QDialog::finished, &loop, &QEventLoop::quit);
+    QMetaObject::Connection conn1 = QObject::connect(&msgBox, &QDialog::finished, &loop, &QEventLoop::quit);
 
     // 128ms of events processing
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 128);
     loop.exec();
-    QObject::disconnect(dialogFinishedConn);
+    QObject::disconnect(conn1);
 
     int ret = msgBox.result(); // get result
 

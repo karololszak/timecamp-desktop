@@ -17,8 +17,6 @@
 #include <QSettings>
 #include <QJsonDocument>
 
-#include "third-party/vendor/de/skycoder42/qtaskbarcontrol/qtaskbarcontrol.h"
-
 #include "Overrides/TCRequestInterceptor.h"
 #include "Overrides/TCWebEngineView.h"
 #include "Task.h"
@@ -74,9 +72,6 @@ public slots:
     void goToAwayPage();
     void refreshTimerStatus();
     void shouldRefreshTimerStatus(bool, QString);
-    void downloadRequested(QWebEngineDownloadItem* download);
-    void setDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
-    void downloadFinished();
 
 private:
     Ui::MainWidget *ui;
@@ -109,9 +104,6 @@ private:
     bool loggedIn;
 
     void setApiKey(const QString &apiKey);
-
-    QTaskbarControl *taskbar;
-
 };
 
 #endif // MAINWIDGET_H
