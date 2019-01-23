@@ -434,7 +434,7 @@ void MainWidget::fetchTimerName()
 
 void MainWidget::quit()
 {
-    QCoreApplication::quit();
+    QApplication::quit();
 }
 
 void MainWidget::setApiKey(const QString &apiKey)
