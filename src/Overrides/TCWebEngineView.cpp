@@ -12,19 +12,6 @@
 
 TCWebEngineView::TCWebEngineView(QWidget *parent) : QWebEngineView(parent), result(nullptr)
 {
-    bannedActionsIds.push_back(QWebEnginePage::PasteAndMatchStyle);
-    bannedActionsIds.push_back(QWebEnginePage::OpenLinkInNewBackgroundTab);
-    bannedActionsIds.push_back(QWebEnginePage::OpenLinkInThisWindow);
-    bannedActionsIds.push_back(QWebEnginePage::OpenLinkInNewWindow);
-    bannedActionsIds.push_back(QWebEnginePage::OpenLinkInNewTab);
-    bannedActionsIds.push_back(QWebEnginePage::DownloadLinkToDisk);
-    bannedActionsIds.push_back(QWebEnginePage::DownloadImageToDisk);
-    bannedActionsIds.push_back(QWebEnginePage::DownloadMediaToDisk);
-    bannedActionsIds.push_back(QWebEnginePage::InspectElement);
-    bannedActionsIds.push_back(QWebEnginePage::RequestClose);
-    bannedActionsIds.push_back(QWebEnginePage::SavePage);
-    bannedActionsIds.push_back(QWebEnginePage::OpenLinkInNewBackgroundTab);
-    bannedActionsIds.push_back(QWebEnginePage::ViewSource);
 }
 
 TCWebEngineView::~TCWebEngineView()
@@ -47,14 +34,28 @@ void TCWebEngineView::contextMenuEvent(QContextMenuEvent *event)
 {
     QMenu *menu = page()->createStandardContextMenu();
     const QList<QAction*> contextMenuActions = menu->actions();
-
-    QList<QAction*> bannedActionsOfPage;
-    for (QWebEnginePage::WebAction webAction: bannedActionsIds) {
-        bannedActionsOfPage.push_back(page()->action(webAction));
+    auto it = std::find(contextMenuActions.cbegin(), contextMenuActions.cend(), page()->action(QWebEnginePage::ViewSource));
+    if (it != contextMenuActions.cend()) {
+        (*it)->setVisible(false);
     }
+    QList<QAction*> bannedActions;
+    bannedActions.push_back(page()->action(QWebEnginePage::PasteAndMatchStyle));
+    bannedActions.push_back(page()->action(QWebEnginePage::OpenLinkInNewBackgroundTab));
+    bannedActions.push_back(page()->action(QWebEnginePage::OpenLinkInThisWindow));
+    bannedActions.push_back(page()->action(QWebEnginePage::OpenLinkInNewWindow));
+    bannedActions.push_back(page()->action(QWebEnginePage::OpenLinkInNewTab));
+    bannedActions.push_back(page()->action(QWebEnginePage::DownloadLinkToDisk));
+    bannedActions.push_back(page()->action(QWebEnginePage::DownloadImageToDisk));
+    bannedActions.push_back(page()->action(QWebEnginePage::DownloadMediaToDisk));
+    bannedActions.push_back(page()->action(QWebEnginePage::InspectElement));
+    bannedActions.push_back(page()->action(QWebEnginePage::RequestClose));
+    bannedActions.push_back(page()->action(QWebEnginePage::SavePage));
+    bannedActions.push_back(page()->action(QWebEnginePage::OpenLinkInNewBackgroundTab));
+    bannedActions.push_back(page()->action(QWebEnginePage::ViewSource));
+    bannedActions.push_back(page()->action(QWebEnginePage::ViewSource));
 
     for (QAction *action: contextMenuActions) {
-        if (bannedActionsOfPage.contains(action)) {
+        if (bannedActions.contains(action)) {
             action->setVisible(false);
         }
     }
