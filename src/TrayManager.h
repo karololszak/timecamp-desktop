@@ -28,14 +28,14 @@ class MainWidget;
 class TrayManager : public QObject
 {
 Q_OBJECT
-Q_DISABLE_COPY(TrayManager)
+    Q_DISABLE_COPY(TrayManager)
 
 public:
     static const constexpr char *STOP_TIMER = "Stop timer";
     static const constexpr char *STOP_PREFIX = "Stop ";
 
     static TrayManager &instance();
-    ~TrayManager() override = default;
+    virtual ~TrayManager() {}
 
     void setupTray(MainWidget *);
     void setupSettings();
@@ -75,7 +75,6 @@ private:
 #ifndef Q_OS_MACOS
     QSystemTrayIcon *trayIcon = nullptr;
 #endif
-
     QMenu *trayMenu;
     QSettings settings;
     int menuWidth = 100; // px

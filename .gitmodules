@@ -13,7 +13,3 @@
 [submodule "third-party/vendor/de/skycoder42/qtaskbarcontrol"]
 	path = third-party/vendor/de/skycoder42/qtaskbarcontrol
 	url = https://github.com/Skycoder42/QTaskbarControl
-
-[submodule "third-party/vendor/de/skycoder42/qautostart"]
-	path = third-party/vendor/de/skycoder42/qautostart
-	url = https://github.com/Skycoder42/QAutoStart

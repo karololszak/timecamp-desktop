@@ -23,7 +23,6 @@
 
 // db params
 #define DB_FILENAME "localdb.sqlite"
-#define APP_ICON "AppIcon.png"
 
 // connection params
 #define CONN_USER_AGENT "TC Desktop App 2.0" // hardcoded, frontend checks

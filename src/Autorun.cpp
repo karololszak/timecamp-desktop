@@ -1,67 +1,103 @@
-#include <QtCore/QStandardPaths>
-#include <QtCore/QFile>
+#include <QDebug>
 
 #include "Autorun.h"
 #include "Settings.h"
 
-Autorun &Autorun::instance() {
-    static Autorun _instance;
-    return _instance;
-}
-
-Autorun::Autorun(QObject *parent)
-    : QObject(parent), autostart{new QAutoStart{this}}
+void Autorun::enableAutorun()
 {
-    // app that is autostarted will have this argument
-    autostart->setArguments({QStringLiteral("--autostart")});
-
 #ifdef Q_OS_LINUX
-    // AppImage can autostart too
-    appImagePath = qgetenv("APPIMAGE");
-    isAppImage = !appImagePath.isEmpty();
-
-    if (isAppImage) {
-        autostart->setProgram(appImagePath);
+    QString execPath = getenv("APPIMAGE");
+    if (execPath.isEmpty()) {
+        execPath = "/usr/share/TimeCamp SA/TimeCamp Desktop";
     }
 
-    addLinuxIcon();
+    QString desktopFile = ""
+            "[Desktop Entry]\n"
+            "Version=1.0\n"
+            "Comment=\"TimeCamp Desktop 1.0\"\n"
+            "Type=Application\n"
+            "Name=TimeCamp Desktop\n"
+            "Exec=\""
+            + execPath +
+            "\"\n"
+            "Icon=\"/usr/share/TimeCamp SA/icon.png\"\n"
+            "StartupNotify=false\n"
+            "Terminal=false\n"
+            "Categories=Office;ProjectManagement;Monitor;Network;\n"
+    ;
+
+    QString filename = QDir::homePath() + "/.config/autostart/TimeCamp Desktop.desktop";
+    if (!QFile::exists(filename)) {
+        QFile file(filename);
+        if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream stream(&file);
+            stream << desktopFile << endl;
+        }
+    }
+
+#elif defined(Q_OS_WIN)
+    QSettings settings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+    settings.setValue(APPLICATION_NAME, QDir::toNativeSeparators(QCoreApplication::applicationFilePath()));
+    settings.sync();
+#else // macOS
+    QString plistFile = ""
+                        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                        "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
+                        "<plist version=\"1.0\">\n"
+                        "    <dict>\n"
+                        "        <key>RunAtLoad</key>\n"
+                        "        <true/>\n"
+                        "        <key>Label</key>\n"
+                        "        <string>TimeCamp Desktop</string>\n"
+                        "        <key>ProgramArguments</key>\n"
+                        "        <array>\n"
+                        "            <string>/Applications/TimeCamp Desktop.app/Contents/MacOS/TimeCampDesktop</string>\n"
+                        "        </array>\n"
+                        "    </dict>\n"
+                        "</plist>";
+
+    QString filename = QDir::homePath() + "/Library/LaunchAgents/TimeCampDesktop.autorun.plist";
+    if (!QFile::exists(filename)) {
+        QFile file(filename);
+        if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream stream(&file);
+            stream << plistFile << endl;
+        }
+    }
 #endif
 }
 
-QAutoStart *Autorun::getAutostart() const {
-    return autostart;
-}
-
+void Autorun::disableAutorun()
+{
 #ifdef Q_OS_LINUX
-void Autorun::addLinuxIcon()
-{
-    iconPath = QStandardPaths::standardLocations(QStandardPaths::AppLocalDataLocation).first() + "/" + APP_ICON; // determine where we want Linux icon
-    QFile::copy(":/Icons/AppIcon_128.png", iconPath); // copy from our "res"
-    autostart->setExtraProperty(QAutoStart::IconName, iconPath); // set it to both autostart and startMenuEntry
-}
-
-void Autorun::addLinuxStartMenuEntry()
-{
-    // hack: start menu entries on LINUX are the .desktop files too, so we can re-use the QAutoStart
-    startMenuEntry = new QAutoStart(this);
-
-    // update path if it's AppImage
-    if (isAppImage) {
-        startMenuEntry->setProgram(appImagePath);
+    //
+    QString filename = QDir::homePath() + "/.config/autostart/TimeCamp Desktop.desktop";
+    if (QFile::exists(filename)) {
+        QFile::remove(filename);
     }
-
-    // write to Apps location
-    startMenuEntry->setExtraProperty(QAutoStart::CustomLocation, QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation));
-    startMenuEntry->setExtraProperty(QAutoStart::Comment, QStringLiteral("Version ") + APPLICATION_VERSION + (isAppImage ? QStringLiteral(" (AppImage)") : QStringLiteral("")));
-
-    // set icon
-    startMenuEntry->setExtraProperty(QAutoStart::IconName, iconPath);
-
-    // set some other arg to let app know where it was launched from
-    startMenuEntry->setArguments({QStringLiteral("--startmenu")});
-
-    // push the file
-    startMenuEntry->setAutoStartEnabled(true);
+#elif defined(Q_OS_WIN)
+    QSettings settings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+    settings.remove(APPLICATION_NAME);
+    settings.sync();
+#else // macOS
+    QString filename = QDir::homePath() + "/Library/LaunchAgents/TimeCampDesktop.autorun.plist";
+    if (QFile::exists(filename)) {
+        QFile::remove(filename);
+    }
+#endif
 }
 
+bool Autorun::checkAutorun()
+{
+#ifdef Q_OS_LINUX
+    QString filename = QDir::homePath() + "/.config/autostart/TimeCamp Desktop.desktop";
+    return QFile::exists(filename);
+#elif defined(Q_OS_WIN)
+    QSettings settings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+    settings.sync();
+    return settings.contains(APPLICATION_NAME);
+#else // macOS
+    QString filename = QDir::homePath() + "/Library/LaunchAgents/TimeCampDesktop.autorun.plist";
+    return QFile::exists(filename);
 #endif
+}
