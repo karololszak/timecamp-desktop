@@ -21,7 +21,8 @@ private:
     QString start_time;
 
 public:
-    explicit TCTimer(Comms *comms);
+//    TCTimer();
+    TCTimer(Comms *comms);
     void start();
     void stop();
     void status();

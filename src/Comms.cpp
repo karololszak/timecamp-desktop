@@ -24,7 +24,7 @@ Comms::Comms(QObject *parent) : QObject(parent)
 {
     qnam.setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
     // connect the callback function
-    QObject::connect(&qnam, &QNetworkAccessManager::finished, this, &Comms::genericReply);
+    QMetaObject::Connection conn = QObject::connect(&qnam, &QNetworkAccessManager::finished, this, &Comms::genericReply);
 }
 
 QUrlQuery Comms::getApiParams()
