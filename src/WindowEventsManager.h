@@ -22,14 +22,14 @@ signals:
 public slots:
     void startOrStopThread(bool startOrStop);
     void awayPopup(unsigned long);
-    void startThread();
-    void stopThread();
 
 protected:
     explicit WindowEventsManager(QObject *parent = nullptr);
 
 private:
     WindowEvents *captureEventsThread;
+    void startThread();
+    void stopThread();
 };
 
 

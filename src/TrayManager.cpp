@@ -78,13 +78,10 @@ void TrayManager::setupSettings() {
 #ifdef _WIDGET_EXISTS_
     widgetAct->setChecked(settings.value(SETT_SHOW_WIDGET, true).toBool());
 #endif
-    autoStopAct->setChecked(settings.value(SETT_STOP_TIMER_ON_SHUTDOWN, true).toBool());
-
     // act on the saved settings
     this->autoStart(autoStartAct->isChecked());
     this->tracker(trackerAct->isChecked());
     this->autoTracking(autoTrackingAct->isChecked());
-    this->autoStop(autoStopAct->isChecked());
 }
 
 void TrayManager::updateRecentTasks() {
@@ -93,11 +90,12 @@ void TrayManager::updateRecentTasks() {
 
 void TrayManager::updateStopMenu(bool canBeStopped, QString timerName) {
     if (!canBeStopped) {
-        timerName = TrayManager::STOP_TIMER;
+        timerName = "Stop timer";
     } else {
         QFont x = QFont();
         QFontMetrics metrics(x);
-        timerName = QString(TrayManager::STOP_PREFIX) + metrics.elidedText(timerName, Qt::ElideRight, menuWidth);
+        int width = 100; // pixels
+        timerName = "Stop " + metrics.elidedText(timerName, Qt::ElideRight, width);
     }
     stopTaskAct->setText(timerName);
     stopTaskAct->setEnabled(canBeStopped);
@@ -118,11 +116,6 @@ void TrayManager::tracker(bool checked) {
 
 void TrayManager::autoTracking(bool checked) {
     settings.setValue(SETT_TRACK_AUTO_SWITCH, checked);
-    settings.sync();
-}
-
-void TrayManager::autoStop(bool checked) {
-    settings.setValue(SETT_STOP_TIMER_ON_SHUTDOWN, checked);
     settings.sync();
 }
 
@@ -178,7 +171,7 @@ void TrayManager::createActions(QMenu *menu) {
     startTaskAct->setShortcutContext(Qt::ApplicationShortcut);
     connect(startTaskAct, &QAction::triggered, this, &TrayManager::emitStartTaskClicked);
 
-    stopTaskAct = new QAction(tr(TrayManager::STOP_TIMER), this);
+    stopTaskAct = new QAction(tr("Stop timer"), this);
     stopTaskAct->setStatusTip(tr("Stop currently running timer"));
     stopTaskAct->setShortcut(QKeySequence(KB_SHORTCUTS_STOP_TIMER));
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
@@ -205,9 +198,6 @@ void TrayManager::createActions(QMenu *menu) {
     autoStartAct->setDisabled(true); // disable by default, till we login
     autoStartAct->setCheckable(true);
     connect(autoStartAct, &QAction::triggered, this, &TrayManager::autoStart);
-
-    autoStopAct = new QAction(tr("Stop timer when quitting the app"), this);
-    autoStopAct->setCheckable(true);
 
     helpAct = new QAction(tr("Help && support"), this);
     helpAct->setStatusTip(tr("Need help? Talk to one of our support gurus"));
@@ -267,7 +257,6 @@ void TrayManager::assignActions(QMenu *menu) {
 #ifdef _WIDGET_EXISTS_
     tempMenu->addAction(widgetAct);
 #endif
-    tempMenu->addAction(autoStopAct);
     tempMenu->addSeparator();
     tempMenu->addAction(helpAct);
     tempMenu->addSeparator();
@@ -341,11 +330,4 @@ void TrayManager::emitStartTaskClicked() {
 
 void TrayManager::emitStopTaskClicked() {
     emit stopTaskClicked();
-}
-
-void TrayManager::onAppClose()
-{
-    if (autoStopAct->isChecked()) {
-        emit stopTaskClicked();
-    }
 }
