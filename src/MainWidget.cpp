@@ -4,6 +4,7 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QDir>
 #include <QtCore/QStringBuilder>
+#include <QtCore/QRegularExpression>
 
 #include "MainWidget.h"
 #include "ui_MainWidget.h"
@@ -119,9 +120,8 @@ void MainWidget::webpageDataUpdateOnInterval()
             fetchRecentTasks();
         }
         getCurrentWebTimerStatusEmitted();
-    } else {
-        checkAPIkey();
     }
+    checkAPIkey();
 }
 
 void MainWidget::setupWebview()
@@ -160,7 +160,8 @@ void MainWidget::setupWebview()
     QObject::connect(QTWEPage, &QWebEnginePage::titleChanged, this, &MainWidget::webpageTitleChanged);
 
     checkAPIkey(); // try to fetch api key once on the start
-    this->goToTimerPage(); // loads main app url
+//    this->goToTimerPage(); // loads main app url
+    QTWEPage->load(QUrl(LOGIN_URL));
 }
 
 void MainWidget::handleLoadStarted()
@@ -202,11 +203,10 @@ void MainWidget::wasTheWindowLeftOpened()
     }
 }
 
-void MainWidget::webpageTitleChanged(const QString title)
+void MainWidget::webpageTitleChanged(const QString &title)
 {
-//    qInfo("[NEW_TC]: Webpage title changed: ");
-//    qInfo(title.toLatin1().constData());
-    setLoggedIn(checkIfLoggedIn(title));
+//    qDebug("[Window]: Webpage title changed: %s", title.toLatin1().constData());
+    setLoggedIn(!checkIfOnLoginPage());
     if (!loggedIn) {
         setApiKey(QString());
         LastTasks.clear(); // clear last tasks
@@ -228,7 +228,7 @@ void MainWidget::clearCache()
 
 void MainWidget::webviewRefresh()
 {
-    qInfo("Window: page refresh");
+    qInfo("[Window]: page refresh");
     this->clearCache();
     this->goToTimerPage();
     this->forceLoadUrl(APPLICATION_URL);
@@ -236,15 +236,17 @@ void MainWidget::webviewRefresh()
 
 void MainWidget::webviewFullscreen()
 {
-    qInfo("Window: go full screen");
+    qInfo("[Window]: go full screen");
     this->setUpdatesEnabled(false);
     this->setWindowState(this->windowState() ^ Qt::WindowFullScreen);
     this->setUpdatesEnabled(true);
 }
 
-bool MainWidget::checkIfLoggedIn(const QString &title)
+bool MainWidget::checkIfOnLoginPage()
 {
-    return !title.toLower().contains(QRegExp(QStringLiteral("log in|login|register|create free account|create account|time tracking software|blog")));
+    QRegularExpression regex("log in|login|register|create free account|create account|time tracking software|blog");
+
+    return (QTWEPage->title().isEmpty() || QTWEPage->title().toLower().contains(regex));
 }
 
 void MainWidget::open()
@@ -325,11 +327,17 @@ void MainWidget::chooseTask()
 
 void MainWidget::showTaskPicker()
 {
+    if (checkIfOnLoginPage()) {
+        return;
+    }
     this->runJSinPage(QStringLiteral("$('html').click();$('#timer-task-picker, #new-entry-task-picker').tcTTTaskPicker('hide').tcTTTaskPicker('show');"));
 }
 
 void MainWidget::refreshTimerPageData()
 {
+    if (checkIfOnLoginPage()) {
+        return;
+    }
     this->runJSinPage(QStringLiteral("if(typeof(angular) !== 'undefined'){"
                       "angular.element(document.body).injector().get('TTEntriesService').reload();"
                       "angular.element(document.body).injector().get('UserLogService').reload();"
@@ -339,7 +347,7 @@ void MainWidget::refreshTimerPageData()
 
 void MainWidget::triggerTimerStatusFetchAsync()
 {
-    if (!checkIfLoggedIn(QTWEPage->title())) {
+    if (checkIfOnLoginPage()) {
         return;
     }
     qDebug() << "[JS] Timer STATUS fetch";
@@ -348,6 +356,9 @@ void MainWidget::triggerTimerStatusFetchAsync()
 
 void MainWidget::getCurrentWebTimerStatusEmitted()
 {
+    if (checkIfOnLoginPage()) {
+        return;
+    }
     QTWEPage->runJavaScript(QStringLiteral("typeof(angular) !== 'undefined' && typeof(angular.element(document.body).injector()) !== 'undefined' && JSON.stringify(angular.element(document.body).injector().get('TimerService').timer)"),
         [this](const QVariant &v)
     {
@@ -386,9 +397,6 @@ void MainWidget::fetchRecentTasks()
 
 void MainWidget::checkAPIkey()
 {
-    if (!checkIfLoggedIn(QTWEPage->title())) {
-        return;
-    }
     QString apiKeyStr = settings.value(SETT_APIKEY).toString().trimmed();
     if (apiKeyStr.isEmpty() || apiKeyStr == QLatin1String("false")) {
         fetchAPIkey();
@@ -397,12 +405,15 @@ void MainWidget::checkAPIkey()
 
 void MainWidget::fetchAPIkey()
 {
+    if (checkIfOnLoginPage()) {
+        return;
+    }
     auto *apiPageView = new TCWebEngineView(this);
     auto *apiPage = new QWebEnginePage(QTWEProfile, apiPageView);
     apiPageView->setPage(apiPage);
     apiPage->load(QUrl(APIKEY_URL));
 
-    QObject::connect(apiPageView, &QWebEngineView::loadFinished, [=](bool loadOk) {
+    QObject::connect(apiPageView, &QWebEngineView::loadFinished, this, [this, apiPageView](bool loadOk) {
         if (!loadOk) {
             qWarning() << "Couldn't fetch API key";
             return;
@@ -410,7 +421,7 @@ void MainWidget::fetchAPIkey()
 
         qInfo() << "Fetched API key";
 
-        apiPageView->page()->toPlainText([=](const QString &pageText) {
+        apiPageView->page()->toPlainText([this, apiPageView](const QString &pageText) {
             if (pageText.contains(QLatin1String("no_session"))) {
                 setLoggedIn(false);
             } else {
@@ -431,6 +442,11 @@ void MainWidget::quit()
 
 void MainWidget::setApiKey(const QString &apiKey)
 {
+    if (apiKey.isEmpty()) {
+        qDebug() << "API key was reset (logout?)";
+    } else {
+        qDebug() << "API key: " << apiKey;
+    }
     settings.setValue(SETT_APIKEY, apiKey); // save apikey to settings
     settings.sync();
 }
@@ -493,8 +509,10 @@ void MainWidget::downloadFinished() {
     taskbar->setProgressVisible(false);
 }
 
-void MainWidget::setLoggedIn(bool loggedIn) {
-    MainWidget::loggedIn = loggedIn;
-    qDebug() << "Logged in: " << loggedIn;
-    emit pageStatusChanged(loggedIn);
+void MainWidget::setLoggedIn(bool loggedInUpdate) {
+    if(loggedIn != loggedInUpdate) {
+        MainWidget::loggedIn = loggedInUpdate;
+        qDebug() << "Logged in: " << loggedInUpdate;
+        emit pageStatusChanged(loggedInUpdate);
+    }
 }

@@ -19,6 +19,7 @@ bool ApiHelper::updateApiKeyFromSettings()
 
 QUrlQuery ApiHelper::getDefaultApiParams()
 {
+    updateApiKeyFromSettings();
     QUrlQuery params = QUrlQuery();
     params.addQueryItem(QStringLiteral("api_token"), apiKey);
     params.addQueryItem(QStringLiteral("service"), QStringLiteral(SETT_API_SERVICE_FIELD));

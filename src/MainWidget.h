@@ -62,7 +62,7 @@ public slots:
     void webviewRefresh();
     void webviewFullscreen();
 
-    void webpageTitleChanged(QString title);
+    void webpageTitleChanged(const QString &title);
 
     void wasTheWindowLeftOpened();
     void open();
@@ -100,7 +100,7 @@ private:
     void goToTimerPage();
     void refreshTimerPageData();
 
-    bool checkIfLoggedIn(const QString &title);
+    bool checkIfOnLoginPage();
     void setupWebview();
 
     QShortcut *refreshBind;
@@ -109,7 +109,7 @@ private:
     bool MainWidgetWasInitialised = false;
     bool loggedIn;
 private:
-    void setLoggedIn(bool loggedIn);
+    void setLoggedIn(bool loggedInUpdate);
     void setApiKey(const QString &apiKey);
 
     QTaskbarControl *taskbar;
