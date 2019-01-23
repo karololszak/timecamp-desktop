@@ -22,60 +22,50 @@ void TCTimer::decideTimerReply(QNetworkReply *reply, QByteArray buffer)
 
 void TCTimer::timerStatusReply(QByteArray buffer)
 {
+    bool previousIsRunning = isRunning;
+    QString previousName = name;
     QJsonDocument itemDoc = QJsonDocument::fromJson(buffer);
 
-    int bufLength = buffer.length();
     buffer.truncate(MAX_LOG_TEXT_LENGTH);
-    qDebug() << "Timer Status Response [" << bufLength << "]: " << buffer;
+    qDebug() << "Timer Status Response: " << buffer;
 
     QJsonObject rootObject = itemDoc.object();
-
-    isRunning = false;
-    bool wasIsTimerRunningFound = true;
-    QJsonValue isTimerRuninngJsonVal = rootObject.value("isTimerRunning");
-    if (isTimerRuninngJsonVal.isString()) {
-        isRunning = isTimerRuninngJsonVal.toString().toLower() == "true";
-    } else if (isTimerRuninngJsonVal.isDouble()) {
-        isRunning = (bool) isTimerRuninngJsonVal.toInt();
-    } else if (isTimerRuninngJsonVal.isBool()) {
-        isRunning = isTimerRuninngJsonVal.toBool();
+    QJsonValue isTimerRuninngJsonValue = rootObject.value("isTimerRunning");
+    isRunning = (isTimerRuninngJsonValue.isString() && (isTimerRuninngJsonValue.toString() == "true"));
+    isRunning = (isTimerRuninngJsonValue.isBool() && isTimerRuninngJsonValue.toBool());
+    if (isRunning) {
+        QJsonValue elapsedJsonVal = rootObject.value("elapsed");
+        if (elapsedJsonVal.isString()) {
+            elapsed = elapsedJsonVal.toString().toInt();
+        } else {
+            elapsed = elapsedJsonVal.toInt();
+        }
+        task_id = rootObject.value("task_id").toString().toInt();
+        entry_id = rootObject.value("entry_id").toString().toInt();
+        timer_id = rootObject.value("timer_id").toString().toInt();
+        external_task_id = rootObject.value("external_task_id").toString().toInt();
+        name = rootObject.value("name").toString();
+        if(task_id != 0) {
+            Task *taskObj = DbManager::instance().getTaskById(task_id);
+            if(taskObj != nullptr) {
+                name = taskObj->getName();
+            }
+        }
+        start_time = rootObject.value("external_task_id").toString();
     } else {
-        wasIsTimerRunningFound = false;
+        clearData();
     }
-    if (!wasIsTimerRunningFound) {
-        isRunning = !rootObject.value("entry_time").isDouble(); // entry_time is given only on stopTimer
+    QJsonValue newTimerId = rootObject.value("new_timer_id");
+    if(!newTimerId.isUndefined() && !newTimerId.isNull()) {
+        timer_id = newTimerId.toInt();
+        elapsed = 1; // let's say it's been running for 1 sec, just to show some time
+        isRunning = true;
     }
 
-    // clear elapsed, task, etc - when timer wasn't running
-    if (!isRunning) {
-        clearData();
+    if (previousIsRunning != isRunning || previousName != name) {
         emit timerStatusChanged(isRunning, name);
     }
-
-    // then set / update everything with data from response
-
-    Formatting::jsonObjValToInt(rootObject, "elapsed", &elapsed);
-    Formatting::jsonObjValToInt(rootObject, "task_id", &task_id);
-    Formatting::jsonObjValToInt(rootObject, "entry_id", &entry_id);
-    Formatting::jsonObjValToInt(rootObject, "timer_id", &timer_id);
-    Formatting::jsonObjValToInt(rootObject, "external_task_id", &external_task_id);
-
-    QJsonValue nameJsonVal = rootObject.value("name");
-    if (nameJsonVal.isString()) {
-        name = nameJsonVal.toString();
-    }
-
-    start_time = rootObject.value("start_time").toString();
-
-    QJsonValue newTimerIdVal = rootObject.value("new_timer_id");
-    if(newTimerIdVal.isDouble()) {
-        timer_id = newTimerIdVal.toInt(); // set internal timer_id
-        elapsed = 1; // we started new timer, but got info about old timers elapsed time... weird API
-    }
-
-    if (task_id != 0) {
-        onTimerStartRoutine(nullptr, elapsed); // this will restart counting from 0, get names, etc
-    }
+    emit timerElapsedSeconds(elapsed);
 }
 
 void TCTimer::clearData()
@@ -90,30 +80,21 @@ void TCTimer::clearData()
     start_time = QString("");
 }
 
-void TCTimer::mergedStartTimerSlots(qint64 taskID)
-{
-    task_id = taskID;
-    comms->timerStart(task_id);
-    onTimerStartRoutine(nullptr, 1);
-}
-
 void TCTimer::startTaskByTaskObj(Task *task, bool force)
 {
-    if (force || task_id != task->getTaskId()) {
-        this->mergedStartTimerSlots(task->getTaskId());
+    if (force || timer_id == 0 || timer_id != task->getTaskId()) {
+        comms->timerStart(task->getTaskId());
     }
 }
 
-void TCTimer::startTaskByID(qint64 taskID, bool force)
+void TCTimer::startTaskByID(qint64 taskID)
 {
-    if (force || task_id != taskID) {
-        this->mergedStartTimerSlots(taskID);
-    }
+    comms->timerStart(taskID);
 }
 
 void TCTimer::startTimerSlot()
 {
-    this->mergedStartTimerSlots(0);
+    comms->timerStart();
 }
 
 void TCTimer::stopTimerSlot()
@@ -124,27 +105,6 @@ void TCTimer::stopTimerSlot()
 void TCTimer::startIfNotRunningYet()
 {
     if (!isRunning) {
-        this->mergedStartTimerSlots(0);
-    }
-}
-
-
-void TCTimer::onTimerStartRoutine(Task* taskObj, qint64 fromStartElapsed)
-{
-    isRunning = true;
-    QString previousName = name;
-
-    if(taskObj == nullptr) { // if nothing was passed
-        taskObj = DbManager::instance().getTaskById(task_id); // get obj from DB
-    }
-
-    if(taskObj != nullptr) { // if task was found in DB (or was passed and was not null)
-        task_id = taskObj->getTaskId();
-        name = taskObj->getName(); // set TimerName to TaskName
-    }
-
-    if (0 != QString::compare(previousName, name)) {
-        emit timerStatusChanged(isRunning, name);
-        emit timerElapsedSeconds(fromStartElapsed);
+        comms->timerStart();
     }
 }

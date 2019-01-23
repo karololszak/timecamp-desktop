@@ -275,7 +275,7 @@ void TrayManager::assignActions(QMenu *menu) {
 
     // replace only if menu should change
     if (!areMenusEqual(tempMenu, menu)) {
-        qDebug() << "Tray Menu Update";
+        qDebug() << "Menus are not equal! REPLACE!";
         trayMenu = tempMenu;
     }
 }
@@ -307,7 +307,7 @@ void TrayManager::updateWidget(bool loggedIn) {
 }
 
 void TrayManager::loginLogout(bool isLoggedIn, QString tooltipText) {
-//    qDebug() << "[Browser] Page changed; update whether logged in or not";
+    qDebug() << "[Browser] Page changed; update whether logged in or not";
 
     this->updateWidget(isLoggedIn);
     startTaskAct->setEnabled(isLoggedIn);

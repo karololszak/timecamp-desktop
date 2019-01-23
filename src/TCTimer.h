@@ -22,14 +22,12 @@ private:
     qint64 external_task_id;
     QString name;
     QString start_time;
-    void mergedStartTimerSlots(qint64 taskID);
 
 public:
     explicit TCTimer(Comms *comms);
     void decideTimerReply(QNetworkReply *reply, QByteArray buffer);
     void timerStatusReply(QByteArray buffer);
     void clearData();
-    void onTimerStartRoutine(Task *taskObj = nullptr, qint64 fromStartElapsed = 1);
 
 signals:
     void timerStatusChanged(bool, QString);
@@ -37,7 +35,7 @@ signals:
 
 public slots:
     void startTaskByTaskObj(Task *task, bool force);
-    void startTaskByID(qint64 taskID, bool force);
+    void startTaskByID(qint64 taskID);
     void startTimerSlot();
     void stopTimerSlot();
     void startIfNotRunningYet();

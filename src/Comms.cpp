@@ -87,8 +87,6 @@ void Comms::clearLastApp()
 
 void Comms::appChanged(AppData *app)
 {
-    emit announceAppChange(app);
-
     if (lastApp == nullptr) {
         qDebug() << "[FIRST APP DETECTED]";
         qint64 now = QDateTime::currentMSecsSinceEpoch();
@@ -374,6 +372,8 @@ void Comms::tasksReply(QByteArray buffer)
 
     buffer.truncate(MAX_LOG_TEXT_LENGTH);
     qDebug() << "Tasks Response: " << buffer;
+
+    DbManager::instance().clearTaskList();
 
     QJsonObject rootObject = itemDoc.object();
     for (auto oneTaskJSON: rootObject) {
