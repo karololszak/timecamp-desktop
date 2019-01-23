@@ -3,8 +3,9 @@
 
 #include "TCNavigationInterceptor.h"
 
-TCNavigationInterceptor::TCNavigationInterceptor(QWebEnginePage *parent) : QWebEnginePage(parent), target(parent)
+TCNavigationInterceptor::TCNavigationInterceptor(QWebEnginePage *parent) : QWebEnginePage(parent)
 {
+    target = parent;
 }
 
 bool TCNavigationInterceptor::acceptNavigationRequest(const QUrl &url, NavigationType type, bool isMainFrame)

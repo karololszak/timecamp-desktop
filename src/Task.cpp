@@ -6,7 +6,8 @@
 Task::Task()
 = default;
 
-Task::Task(qint64 tid): tc_id(tid) {
+Task::Task(qint64 tid) {
+    tc_id = tid;
 }
 
 qint64 Task::getTaskId() const {
@@ -31,8 +32,8 @@ const QString &Task::getKeywords() const {
 
 void Task::setKeywords(QString keywords) {
     this->keywords = keywords;
-    QStringList receivedKeywordsList = keywords.split(',', QString::SkipEmptyParts);
-    this->setKeywordsList(receivedKeywordsList);
+    QStringList keywordsList = keywords.split(',', QString::SkipEmptyParts);
+    this->setKeywordsList(keywordsList);
 }
 
 QStringList Task::getKeywordsList() {
