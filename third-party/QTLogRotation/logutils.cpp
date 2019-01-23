@@ -90,7 +90,7 @@ namespace LOGUTILS {
       gmtime_s(&buf, &stdtime);
       std::strftime(timestring, sizeof(timestring), "%H:%M:%S", &buf);
 #else
-        std::strftime(timestring, sizeof(timestring), "%H:%M:%S", std::gmtime(&stdtime)); // UTC, std::localtime for local
+        std::strftime(timestring, sizeof(timestring), "%H:%M:%S", std::gmtime(&stdtime)); // UTC, localtime for local
 #endif
 
         QString txt;
