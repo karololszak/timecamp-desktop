@@ -5,8 +5,6 @@ branches:
   only:
     - master
 
-skip_tags: true
-
 install:
   - set QTDIR=C:\Qt\5.9\msvc2017_64
   - set PATH=%QTDIR%\bin;%PATH%;
@@ -46,5 +44,3 @@ deploy:
   artifact: Release.zip
   draft: false
   prerelease: true
-    on:
-      APPVEYOR_REPO_TAG: false
