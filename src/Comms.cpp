@@ -297,6 +297,11 @@ void Comms::getUserInfo()
 
 void Comms::userInfoReply(QNetworkReply *reply)
 {
+    if(reply->error() != QNetworkReply::NoError){
+        qWarning() << "Network error: " << reply->errorString();
+        return;
+    }
+
     QByteArray buffer = reply->readAll();
     QJsonDocument itemDoc = QJsonDocument::fromJson(buffer);
 
@@ -371,6 +376,10 @@ void Comms::getSettings()
 
 void Comms::settingsReply(QNetworkReply *reply)
 {
+    if(reply->error() != QNetworkReply::NoError){
+        qWarning() << "Network error: " << reply->errorString();
+        return;
+    }
     QByteArray buffer = reply->readAll();
     QJsonDocument itemDoc = QJsonDocument::fromJson(buffer);
     buffer.truncate(MAX_LOG_TEXT_LENGTH);
@@ -402,6 +411,11 @@ void Comms::getTasks()
 
 void Comms::tasksReply(QNetworkReply *reply)
 {
+    if(reply->error() != QNetworkReply::NoError){
+        qWarning() << "Network error: " << reply->errorString();
+        return;
+    }
+
     QByteArray buffer = reply->readAll();
     QJsonDocument itemDoc = QJsonDocument::fromJson(buffer);
 
@@ -425,10 +439,8 @@ void Comms::tasksReply(QNetworkReply *reply)
 
 void Comms::genericReply(QNetworkReply *reply)
 {
-    QByteArray buffer = reply->readAll();
     if (reply->error() != QNetworkReply::NoError) {
         qWarning() << "Network error: " << reply->errorString();
-        qWarning() << "Data: " << buffer;
         return;
     }
 
@@ -441,6 +453,7 @@ void Comms::genericReply(QNetworkReply *reply)
         fn(this, reply);
     }
 }
+
 
 void Comms::netRequest(QNetworkRequest request, QNetworkAccessManager::Operation netOp, QByteArray data) // default params in Comms.h
 {
