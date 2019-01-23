@@ -97,10 +97,6 @@ void WindowEvents_U::run()
     long xwindowid_curr = 0;
 
     while (!QThread::currentThread()->isInterruptionRequested()) {
-        if (!XPending(display)) {
-            continue;
-        }
-
         XNextEvent(display, &event);
         // if it's not a property notify, we don't want to process it
         if (event.type != PropertyNotify) {

@@ -65,14 +65,14 @@ namespace LOGUTILS {
 #endif
 
         // ANSI color codes, sadly Windows doesn't support them
-//        qSetMessagePattern("[%{time HH:mm:ss.zzz}] "
+//        qSetMessagePattern("[%{time HH:mm:ss.zzz t}] "
 //                           "%{if-debug}" "\x1b[0mDebug:" "\t%{message}" "%{endif}"
 //                           "%{if-info}" "\x1b[106;97mInfo:\x1b[1;96m" "\t%{message}" "%{endif}"
 //                           "%{if-warning}" "\x1b[103;97mWarn:\x1b[1;93m" "\tIn: %{file}:%{line} - %{function}\n" "%{message}" "%{endif}"
 //                           "%{if-critical}" "\x1b[101;97mCrit:\x1b[1;91m" "\tIn: %{file}:%{line} - %{function}\n" "%{message}" "%{endif}"
 //                           "%{if-fatal}" "\x1b[105;30mFatal:\x1b[1;95m" "\tIn: %{file}:%{line} - %{function}\n" "%{message}" "%{endif}"
 //                           "\x1b[0m");
-        qSetMessagePattern("[%{time HH:mm:ss.zzz}] "
+        qSetMessagePattern("[%{time HH:mm:ss.zzz t}] "
                            "%{if-debug}"    "Debug:" "\t%{message}" "%{endif}"
                            "%{if-info}"     "Info:"  "\t%{message}" "%{endif}"
                            "%{if-warning}"  "Warn:"  "\tIn: %{file}:%{line} - %{function} \n" "%{message}" "%{endif}"

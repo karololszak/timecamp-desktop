@@ -69,7 +69,6 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     QSingleInstance instance;
 
-    // copied from tutorial, basically close if you're not the master process or if can't determine
     if (instance.process()) {
         if (!instance.isMaster()) {
             return 0;
@@ -78,10 +77,8 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    qInfo() << QStringLiteral(APPLICATION_NAME) % " " % APPLICATION_VERSION % ", " % QSysInfo::prettyProductName() % ", " % QSysInfo::currentCpuArchitecture();
-    qInfo() << "Time now:\t" << QDateTime::currentDateTime().toString(Qt::RFC2822Date);
-    qInfo() << "Time UTC:\t" << QDateTime::currentDateTimeUtc().toString(Qt::RFC2822Date);
-    qInfo() << QStringLiteral("Qt ") % QT_VERSION_STR % ", build ABI: " % QSysInfo::buildAbi();
+    qInfo() << QString(APPLICATION_NAME + QStringLiteral(" ") + APPLICATION_VERSION + ", " + QSysInfo::prettyProductName() + ", " + QSysInfo::currentCpuArchitecture());
+    qDebug() << "build ABI: " << QSysInfo::buildAbi();
     qInfo() << "OpenSSL @ compile:\t" << QSslSocket::sslLibraryBuildVersionNumber() << "\t| "<< QSslSocket::sslLibraryBuildVersionString();
     qInfo() << "OpenSSL @ runtime:\t"<< QSslSocket::sslLibraryVersionNumber() << "\t| " << QSslSocket::sslLibraryVersionString();
 
@@ -91,7 +88,7 @@ int main(int argc, char *argv[])
         qDebug() << "\tLocation " << i << QLibraryInfo::location(QLibraryInfo::LibraryLocation(i));
     }
     qDebug() << "App Location: " << QCoreApplication::applicationDirPath();
-    qDebug() << "qt.conf found: " << QDir(QCoreApplication::applicationDirPath()).exists(QStringLiteral("qt.conf"));
+    qDebug() << "qt.conf: " << QDir(QCoreApplication::applicationDirPath()).exists(QStringLiteral("qt.conf"));
     qDebug() << "$PATH: " << qgetenv("PATH");
 #ifdef Q_OS_LINUX
     qInfo() << "$APPIMAGE: " << qgetenv("APPIMAGE");
