@@ -20,22 +20,44 @@ void TCTimer::stop()
 
 void TCTimer::status()
 {
-    QUrlQuery params = comms->getApiParams();
+    if (!comms->updateApiKeyFromSettings()) {
+        return;
+    }
+
+    QUrlQuery params;
+    params.addQueryItem("api_token", comms->getApiKey());
+    params.addQueryItem("service", SETT_API_SERVICE_FIELD);
+
     params.addQueryItem("action", "status");
-    comms->postRequest(comms->getApiUrl("/timer", "json"), params);
+
+    QUrl serviceURL(comms->getApiUrl("/timer", "json"));
+    QNetworkRequest request(serviceURL);
+
+    QUrl URLParams;
+    URLParams.setQuery(params);
+    QByteArray jsonString = URLParams.toEncoded();
+    QByteArray postDataSize = QByteArray::number(jsonString.size());
+
+    // make it "www form" because thats what API expects; and add length
+    request.setRawHeader("Content-Type", "application/x-www-form-urlencoded");
+    request.setRawHeader("Content-Length", postDataSize);
+
+    comms->netRequest(request, QNetworkAccessManager::PostOperation, jsonString);
 }
 
-void TCTimer::decideTimerReply(QNetworkReply *reply, QByteArray buffer)
+void TCTimer::decideTimerReply(QNetworkReply *reply)
 {
     QString stringUrl = reply->url().toString();
-    if (stringUrl.contains("/timer")) {
+    if(stringUrl.contains("/timer"))
+    {
         // this needs some better checks
-        timerStatusReply(std::move(buffer));
+        timerStatusReply(reply);
     }
 }
 
-void TCTimer::timerStatusReply(QByteArray buffer)
+void TCTimer::timerStatusReply(QNetworkReply *reply)
 {
+    QByteArray buffer = reply->readAll();
     QJsonDocument itemDoc = QJsonDocument::fromJson(buffer);
 
     buffer.truncate(MAX_LOG_TEXT_LENGTH);
