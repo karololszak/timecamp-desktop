@@ -32,8 +32,8 @@ addons:
       - tree
       - ninja
       - qt
-#    update: true
-
+    update: true
+    
 before_install:
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source ./travis/before_install_linux ; fi
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source ./travis/before_install_osx ; fi
