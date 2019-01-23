@@ -467,13 +467,11 @@ void Comms::netRequest(QNetworkRequest request, QNetworkAccessManager::Operation
         qDebug() << "[POST] Data: " << data;
     }
 
-    if(reply != nullptr) {
-        QEventLoop loop;
-        connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-        loop.exec(); // wait in this function till we get a Network Reply; callback from conn1 gets called in async manner
+    QEventLoop loop;
+    connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+    loop.exec(); // wait in this function till we get a Network Reply; callback from conn1 gets called in async manner
 
-        QObject::disconnect(conn1); // unhook callback - so that next run of this func can set a new callback
+    QObject::disconnect(conn1); // unhook callback - so that next run of this func can set a new callback
 
-        reply->deleteLater();
-    }
+    reply->deleteLater();
 }
