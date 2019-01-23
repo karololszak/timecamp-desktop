@@ -32,6 +32,7 @@ Q_OBJECT
     QHash<QUrl, std::function<void(Comms *, QByteArray buffer)>> commsReplies; // see https://stackoverflow.com/a/7582574/8538394
 
 public:
+
     static Comms &instance();
     ~Comms() override = default;
 

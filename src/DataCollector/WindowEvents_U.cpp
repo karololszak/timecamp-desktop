@@ -43,7 +43,7 @@ std::string WindowEvents_U::execCommand(const char *cmd)
 void WindowEvents_U::logAppName(QString appName, QString windowName)
 {
     AppData *app;
-    QString additionalInfo = QString();
+    QString additionalInfo = QStringLiteral("");
 
     app = WindowEvents::logAppName(appName, windowName, additionalInfo); // save app
 

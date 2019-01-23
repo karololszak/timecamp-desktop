@@ -43,6 +43,7 @@ QString getChromeTabsFilePath() {
 }
 
 QString getCurrentURLFromChromeConfig(const QByteArray &data, const QString &windowTitle) {
+
     // try to read data the best way possible
     QString snss = QTextCodec::codecForName("UTF-16")->toUnicode(data);
 
@@ -80,7 +81,7 @@ QString getCurrentURLFromChromeConfig(const QByteArray &data, const QString &win
             pos = snss.indexOf(urlTitle);
             if (pos == -1) {
                 qInfo("[ChromeURL] Failed to find url for given title");
-                return QString();
+                return QStringLiteral("");
             }
         }
     }
@@ -90,7 +91,7 @@ QString getCurrentURLFromChromeConfig(const QByteArray &data, const QString &win
 
     if (urlPos == -1) {
         qInfo("[ChromeURL] Failed to find 'http' after website name");
-        return QString();
+        return QStringLiteral("");
     }
 
     // convert to latin1 - it strips most of weird unicode chars, leaves proper URI stuff
@@ -112,7 +113,7 @@ QByteArray readChromeFile(const QString &filename) {
 QString getCurrentURLFromChrome(const QString windowTitle) {
     QString chromeSessionFilePath = getChromeSessionFilePath();
     QByteArray sessionContent = readChromeFile(chromeSessionFilePath);
-    QString activeURL = QString();
+    QString activeURL = QStringLiteral("");
     if (!sessionContent.isEmpty()) {
         activeURL = getCurrentURLFromChromeConfig(sessionContent, windowTitle).trimmed();
     }

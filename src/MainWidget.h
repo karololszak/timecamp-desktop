@@ -100,7 +100,7 @@ private:
     void goToTimerPage();
     void refreshTimerPageData();
 
-    bool checkIfLoggedIn(const QString &title);
+    void checkIfLoggedIn(QString title);
     void setupWebview();
 
     QShortcut *refreshBind;

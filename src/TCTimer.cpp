@@ -32,8 +32,7 @@ void TCTimer::timerStatusReply(QByteArray buffer)
 
     int bufLength = buffer.length();
     buffer.truncate(MAX_LOG_TEXT_LENGTH);
-    qDebug() << "Timer Status Response length: " << bufLength;
-//    qDebug() << "Timer Status Response [" << bufLength << "]: " << buffer;
+    qDebug() << "Timer Status Response [" << bufLength << "]: " << buffer;
 
     QJsonObject rootObject = itemDoc.object();
 
@@ -93,8 +92,8 @@ void TCTimer::clearData()
     entry_id = 0;
     timer_id = 0;
     external_task_id = 0;
-    name = QString();
-    start_time = QString();
+    name = QStringLiteral("");
+    start_time = QStringLiteral("");
 }
 
 void TCTimer::mergedStartTimerSlots(qint64 taskID)

@@ -206,9 +206,9 @@ void MainWidget::webpageTitleChanged(const QString title)
 {
 //    qInfo("[NEW_TC]: Webpage title changed: ");
 //    qInfo(title.toLatin1().constData());
-    setLoggedIn(checkIfLoggedIn(title));
+    checkIfLoggedIn(title);
     if (!loggedIn) {
-        setApiKey(QString());
+        setApiKey(QStringLiteral(""));
         LastTasks.clear(); // clear last tasks
         LastTasksCache = QJsonDocument(); // clear the cache
         emit lastTasksChanged();
@@ -228,7 +228,7 @@ void MainWidget::clearCache()
 
 void MainWidget::webviewRefresh()
 {
-    qInfo("Window: page refresh");
+    qDebug("[NEW_TC]: page refresh");
     this->clearCache();
     this->goToTimerPage();
     this->forceLoadUrl(APPLICATION_URL);
@@ -236,15 +236,17 @@ void MainWidget::webviewRefresh()
 
 void MainWidget::webviewFullscreen()
 {
-    qInfo("Window: go full screen");
+    qDebug("[NEW_TC]: go full screen");
     this->setUpdatesEnabled(false);
     this->setWindowState(this->windowState() ^ Qt::WindowFullScreen);
     this->setUpdatesEnabled(true);
 }
 
-bool MainWidget::checkIfLoggedIn(const QString &title)
+void MainWidget::checkIfLoggedIn(const QString title)
 {
-    return !title.toLower().contains(QRegExp(QStringLiteral("log in|login|register|create free account|create account|time tracking software|blog")));
+    if (title.toLower().contains(QRegExp("log in|login|register|create free account|create account|time tracking software|blog"))) {
+        setLoggedIn(false); // when we log out, we need to set this variable again
+    }
 }
 
 void MainWidget::open()
@@ -275,7 +277,10 @@ void MainWidget::forceLoadUrl(const QString url)
 
 bool MainWidget::checkIfOnTimerPage()
 {
-    return QTWEPage->url().toString().indexOf(QLatin1String("app#/timesheets/timer")) != -1;
+    if (QTWEPage->url().toString().indexOf(QLatin1String("app#/timesheets/timer")) != -1) {
+        return true;
+    }
+    return false;
 }
 
 void MainWidget::goToTimerPage()
@@ -339,9 +344,6 @@ void MainWidget::refreshTimerPageData()
 
 void MainWidget::triggerTimerStatusFetchAsync()
 {
-    if (!checkIfLoggedIn(QTWEPage->title())) {
-        return;
-    }
     qDebug() << "[JS] Timer STATUS fetch";
     this->runJSinPage(QStringLiteral("typeof(angular) !== 'undefined' && typeof(angular.element(document.body).injector()) !== 'undefined' && angular.element(document.body).injector().get('TimerService').status();"));
 }
@@ -386,9 +388,6 @@ void MainWidget::fetchRecentTasks()
 
 void MainWidget::checkAPIkey()
 {
-    if (!checkIfLoggedIn(QTWEPage->title())) {
-        return;
-    }
     QString apiKeyStr = settings.value(SETT_APIKEY).toString().trimmed();
     if (apiKeyStr.isEmpty() || apiKeyStr == QLatin1String("false")) {
         fetchAPIkey();
@@ -416,7 +415,7 @@ void MainWidget::fetchAPIkey()
             } else {
                 setLoggedIn(true);
                 setApiKey(pageText); // not no_session - then it's an API KEY
-                webpageTitleChanged(QString());
+                webpageTitleChanged(QStringLiteral(""));
             }
             apiPageView->deleteLater(); // after we finished using the temporary view, we can put it into Qt's "GC" delete queue
         });
@@ -487,7 +486,7 @@ void MainWidget::setDownloadProgress(qint64 bytesReceived, qint64 bytesTotal) {
 
 void MainWidget::downloadFinished() {
     // TODO: add some form of notification - KDE/snorenotify?
-    qInfo() << "[Download] Finished";
+    qDebug() << "[Download] Finished";
 
     taskbar->setProgress(1);
     taskbar->setProgressVisible(false);
@@ -495,6 +494,6 @@ void MainWidget::downloadFinished() {
 
 void MainWidget::setLoggedIn(bool loggedIn) {
     MainWidget::loggedIn = loggedIn;
-    qDebug() << "Logged in: " << loggedIn;
+    qInfo() << "Logged in: " << loggedIn;
     emit pageStatusChanged(loggedIn);
 }

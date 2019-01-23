@@ -48,7 +48,7 @@ void TrayManager::setupTray(MainWidget *parent) {
     trayMenu = new QMenu(parent);
     createActions(trayMenu);
     assignActions(trayMenu);
-    updateStopMenu(false, QString());
+    updateStopMenu(false, QStringLiteral(""));
 
 // trayIcon is unused on MacOS
 #ifndef Q_OS_MACOS

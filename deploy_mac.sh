@@ -123,7 +123,7 @@ echo "******* Create DMG ***********"
 create-dmg --overwrite "${BUNDLE_NAME}"
 
 echo "******* Verify DMG ***********"
-codesign --verify --deep ${CODESIGN_OPTIONS} ./*.dmg
+codesign --verify --deep ${CODESIGN_OPTIONS} *.dmg
 
 echo "******* Verify DMG using spctl ***********"
-spctl -a -t open --context context:primary-signature -vvvv ./*.dmg
+spctl -a -t open --context context:primary-signature -vvvv *.dmg
