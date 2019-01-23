@@ -44,7 +44,7 @@ MainWidget::MainWidget(QWidget *parent)
 
     this->setAcceptDrops(false);
 
-    restoreGeometry(settings.value(QStringLiteral("mainWindowGeometry")).toByteArray()); // from QWidget; restore saved window position
+    restoreGeometry(settings.value("mainWindowGeometry").toByteArray()); // from QWidget; restore saved window position
 
     taskbar = new QTaskbarControl(this);
     taskbar->setAttribute(QTaskbarControl::LinuxDesktopFile, QDir::homePath() + "/.config/autostart/TimeCamp Desktop.desktop");
@@ -70,7 +70,7 @@ void MainWidget::handleSpacingEvents()
     if (MainWidgetWasInitialised) {
         this->setUpdatesEnabled(false);
         QTWEView->resize(size()); // resize webview
-        settings.setValue(QStringLiteral("mainWindowGeometry"), saveGeometry()); // save window position
+        settings.setValue("mainWindowGeometry", saveGeometry()); // save window position
         settings.sync();
         this->setUpdatesEnabled(true);
     }
@@ -116,11 +116,11 @@ void MainWidget::webpageDataUpdateOnInterval()
             fetchRecentTasks();
         }
         QString apiKeyStr = settings.value(SETT_APIKEY).toString().trimmed();
-        if (apiKeyStr.isEmpty() || apiKeyStr == QLatin1String("false")) {
+        if (apiKeyStr.isEmpty() || apiKeyStr == "false") {
             fetchAPIkey();
         }
     } else {
-        setApiKey(QStringLiteral(""));
+        setApiKey("");
     }
 }
 
@@ -208,7 +208,7 @@ void MainWidget::webpageTitleChanged(QString title)
     checkIfLoggedIn(title);
     if (!loggedIn) {
         // javascript magic: hide the "news" on login page
-        this->runJSinPage(QStringLiteral("jQuery('#about .news').parent().parent().attr('class', 'hidden').siblings().first().attr('class', 'col-xs-12 col-sm-10 col-sm-push-1 col-md-8 col-md-push-2 col-lg-6 col-lg-push-3')"));
+        this->runJSinPage("jQuery('#about .news').parent().parent().attr('class', 'hidden').siblings().first().attr('class', 'col-xs-12 col-sm-10 col-sm-push-1 col-md-8 col-md-push-2 col-lg-6 col-lg-push-3')");
         LastTasks.clear(); // clear last tasks
         LastTasksCache = QJsonDocument(); // clear the cache
         emit lastTasksChanged();
@@ -221,7 +221,7 @@ void MainWidget::webpageTitleChanged(QString title)
 void MainWidget::clearCache()
 {
     this->setUpdatesEnabled(false);
-    this->runJSinPage(QStringLiteral("localStorage.clear()"));
+    this->runJSinPage("localStorage.clear()");
     QTWEProfile->clearAllVisitedLinks();
     QTWEProfile->clearHttpCache();
     this->setUpdatesEnabled(true);
@@ -256,7 +256,7 @@ void MainWidget::open()
 {
     settings.setValue(SETT_WAS_WINDOW_LEFT_OPENED, true); // save if window was opened
     settings.sync();
-    restoreGeometry(settings.value(QStringLiteral("mainWindowGeometry")).toByteArray());
+    restoreGeometry(settings.value("mainWindowGeometry").toByteArray());
     QTWEView->resize(size()); // resize webview
     show();
     setWindowState((windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
@@ -280,7 +280,7 @@ void MainWidget::forceLoadUrl(QString url)
 
 bool MainWidget::checkIfOnTimerPage()
 {
-    if (QTWEPage->url().toString().indexOf(QLatin1String("app#/timesheets/timer")) != -1) {
+    if (QTWEPage->url().toString().indexOf("app#/timesheets/timer") != -1) {
         return true;
     }
     return false;
@@ -333,7 +333,7 @@ void MainWidget::chooseTask()
 
 void MainWidget::showTaskPicker()
 {
-    this->runJSinPage(QStringLiteral("$('html').click();$('#timer-task-picker, #new-entry-task-picker').tcTTTaskPicker('hide').tcTTTaskPicker('show');"));
+    this->runJSinPage("$('html').click();$('#timer-task-picker, #new-entry-task-picker').tcTTTaskPicker('hide').tcTTTaskPicker('show');");
 }
 
 void MainWidget::refreshTimerPageData()
@@ -347,7 +347,7 @@ void MainWidget::refreshTimerPageData()
 
 void MainWidget::refreshTimerStatus()
 {
-    this->runJSinPage(QStringLiteral("typeof(angular) !== 'undefined' && angular.element(document.body).injector().get('TimerService').status();"));
+    this->runJSinPage("typeof(angular) !== 'undefined' && angular.element(document.body).injector().get('TimerService').status();");
     this->checkIsTimerRunning();
 }
 
@@ -357,7 +357,7 @@ void MainWidget::shouldRefreshTimerStatus(bool isRunning, QString name)
         return;
     }
 
-    QString timerTempStr = QStringLiteral("angular.element(document.body).injector().get('TimerService').timer");
+    QString timerTempStr = "angular.element(document.body).injector().get('TimerService').timer";
 
     QString jsToRun = "typeof(angular) !== 'undefined' &&  typeof("+timerTempStr+".isTimerRunning) !== 'undefined' "
                       " && "+timerTempStr+".isTimerRunning == " + QString::number(isRunning);
@@ -383,7 +383,7 @@ void MainWidget::shouldRefreshTimerStatus(bool isRunning, QString name)
 
 void MainWidget::checkIsTimerRunning()
 {
-    QTWEPage->runJavaScript(QStringLiteral("typeof(angular) !== 'undefined' && JSON.stringify(angular.element(document.body).injector().get('TimerService').timer)"),
+    QTWEPage->runJavaScript("typeof(angular) !== 'undefined' && JSON.stringify(angular.element(document.body).injector().get('TimerService').timer)",
         [this](const QVariant &v)
     {
         if(!v.isValid()) {
@@ -395,7 +395,7 @@ void MainWidget::checkIsTimerRunning()
 
 void MainWidget::fetchRecentTasks()
 {
-    QTWEPage->runJavaScript(QStringLiteral("typeof(TC) !== 'undefined' && JSON.stringify(TC.TimeTracking.Lasts)"), [this](const QVariant &v)
+    QTWEPage->runJavaScript("typeof(TC) !== 'undefined' && JSON.stringify(TC.TimeTracking.Lasts)", [this](const QVariant &v)
     {
 //        LastTasks.clear(); // don't need to clear a QHash
 
@@ -410,7 +410,7 @@ void MainWidget::fetchRecentTasks()
             for (QJsonValueRef val: rootArray) {
                 QJsonObject obj = val.toObject();
 //            qDebug() << obj.value("task_id").toString().toInt() << ": " << obj.value("name").toString();
-                LastTasks.insert(obj.value(QStringLiteral("name")).toString(), obj.value(QStringLiteral("task_id")).toString().toInt());
+                LastTasks.insert(obj.value("name").toString(), obj.value("task_id").toString().toInt());
             }
             LastTasksCache = itemDoc;
             emit lastTasksChanged();
@@ -421,7 +421,7 @@ void MainWidget::fetchRecentTasks()
 void MainWidget::fetchAPIkey()
 {
 //    QTWEPage->runJavaScript("await window.apiService.getToken()",
-    QTWEPage->runJavaScript(QStringLiteral("typeof(window.apiService) !== 'undefined' && window.apiService.getToken().$$state.value"), [this](const QVariant &v)
+    QTWEPage->runJavaScript("typeof(window.apiService) !== 'undefined' && window.apiService.getToken().$$state.value", [this](const QVariant &v)
     {
 //        qDebug() << "API Key: " << v.toString();
 

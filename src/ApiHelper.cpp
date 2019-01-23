@@ -15,7 +15,7 @@ bool ApiHelper::updateApiKeyFromSettings()
 {
     apiKey = settings.value(SETT_APIKEY).toString().trimmed();
 
-    if (apiKey.isEmpty() || apiKey == QLatin1String("false")) {
+    if (apiKey.isEmpty() || apiKey == "false") {
         qInfo() << "[EMPTY API KEY !!!]";
         return false;
     }
@@ -25,10 +25,10 @@ bool ApiHelper::updateApiKeyFromSettings()
 QUrlQuery ApiHelper::getDefaultApiParams()
 {
     QUrlQuery params = QUrlQuery();
-    params.addQueryItem(QStringLiteral("api_token"), apiKey);
-    params.addQueryItem(QStringLiteral("service"), SETT_API_SERVICE_FIELD);
-    params.addQueryItem(QStringLiteral("app_version"), APPLICATION_VERSION);
-    params.addQueryItem(QStringLiteral("operating_system"), QSysInfo::prettyProductName());
+    params.addQueryItem("api_token", apiKey);
+    params.addQueryItem("service", SETT_API_SERVICE_FIELD);
+    params.addQueryItem("app_version", APPLICATION_VERSION);
+    params.addQueryItem("operating_system", QSysInfo::prettyProductName());
 
     return params;
 }
@@ -54,7 +54,7 @@ QUrl ApiHelper::userInfoUrl()
 
 QUrl ApiHelper::groupSettingsUrl(QString groupId)
 {
-    return this->getApiUrl(QString(ApiEndpoint::GROUP) + QStringLiteral("/") + groupId + "/setting", ApiFormat::JSON);
+    return this->getApiUrl(QString(ApiEndpoint::GROUP) + QString("/") + groupId + "/setting", ApiFormat::JSON);
 }
 
 QUrl ApiHelper::tasksUrl()

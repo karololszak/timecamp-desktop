@@ -14,7 +14,7 @@ private:
     QSettings settings;
 public:
     explicit ApiHelper(const QString &baseUrl);
-    QUrl getApiUrl(QString endpoint, QString format = QLatin1String(""));
+    QUrl getApiUrl(QString endpoint, QString format = "");
     QUrlQuery getDefaultApiParams();
     bool updateApiKeyFromSettings();
     void setApiKey(const QString &apiKey);

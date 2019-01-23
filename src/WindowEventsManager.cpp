@@ -40,8 +40,8 @@ void WindowEventsManager::awayPopup(unsigned long howLongWasAwayMS)
     QMessageBox msgBox;
     msgBox.setTextInteractionFlags(Qt::NoTextInteraction);
     msgBox.setIconPixmap(QPixmap(MAIN_ICON).scaledToWidth(96));
-    msgBox.setText(QStringLiteral("You've been away from computer."));
-    msgBox.setInformativeText(QStringLiteral("Do you want to log away time activity?"));
+    msgBox.setText("You've been away from computer.");
+    msgBox.setInformativeText("Do you want to log away time activity?");
     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     msgBox.setDefaultButton(QMessageBox::Yes);
 

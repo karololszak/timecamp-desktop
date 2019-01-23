@@ -18,13 +18,13 @@ public:
     const QString &getAdditionalInfo() const;
     void setAdditionalInfo(const QString &additionalInfo);
 
-    const qint64 getStart() const;
-    void setStart(const qint64 start);
+    qint64 getStart() const;
+    void setStart(qint64 start);
 
-    const qint64 getEnd() const;
-    void setEnd(const qint64 end);
+    qint64 getEnd() const;
+    void setEnd(qint64 end);
 
-    const QString getDomainFromAdditionalInfo() const;
+    QString getDomainFromAdditionalInfo();
 
 private:
     QString appName;

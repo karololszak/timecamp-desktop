@@ -10,13 +10,15 @@ Q_OBJECT
 
 public:
     explicit ClickableLabel(QWidget *parent = Q_NULLPTR, Qt::WindowFlags f = Qt::WindowFlags());
-    ~ClickableLabel() override;
+
+    ~ClickableLabel();
 
 signals:
+
     void clicked();
 
 protected:
-    void mousePressEvent(QMouseEvent *event) override;
+    void mousePressEvent(QMouseEvent *event);
 
 };
 

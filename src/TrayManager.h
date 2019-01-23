@@ -97,6 +97,8 @@ private:
     MainWidget *mainWidget;
 
     bool areMenusEqual(QMenu *menu1, QMenu *menu2);
+    void emitStartTaskClicked();
+    void emitStopTaskClicked();
 
 #ifdef _WIDGET_EXISTS_
     Widget *widget;

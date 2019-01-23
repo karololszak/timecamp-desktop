@@ -19,7 +19,7 @@ TrayManager::TrayManager(QObject *parent)
 void TrayManager::setupTray(MainWidget *parent) {
     mainWidget = parent;
     if (!QSystemTrayIcon::isSystemTrayAvailable()) {
-        QMessageBox::critical(mainWidget, QStringLiteral("No tray"),
+        QMessageBox::critical(mainWidget, "No tray",
 
                               "We couldn't detect system tray. Please contact us at "
                               CONTACT_EMAIL " "
@@ -48,7 +48,7 @@ void TrayManager::setupTray(MainWidget *parent) {
     trayMenu = new QMenu(parent);
     createActions(trayMenu);
     assignActions(trayMenu);
-    updateStopMenu(false, QStringLiteral(""));
+    updateStopMenu(false, "");
 
 // trayIcon is unused on MacOS
 #ifndef Q_OS_MACOS
@@ -170,10 +170,7 @@ void TrayManager::createActions(QMenu *menu) {
     startTaskAct->setShortcutVisibleInContextMenu(true);
 #endif
     startTaskAct->setShortcutContext(Qt::ApplicationShortcut);
-    connect(startTaskAct, &QAction::triggered, this, [this]()
-    {
-        emit startTaskClicked();
-    });
+    connect(startTaskAct, &QAction::triggered, this, &TrayManager::emitStartTaskClicked);
 
     stopTaskAct = new QAction(tr(TrayManager::STOP_TIMER), this);
     stopTaskAct->setStatusTip(tr("Stop currently running timer"));
@@ -182,10 +179,7 @@ void TrayManager::createActions(QMenu *menu) {
     stopTaskAct->setShortcutVisibleInContextMenu(true);
 #endif
     stopTaskAct->setShortcutContext(Qt::ApplicationShortcut);
-    connect(stopTaskAct, &QAction::triggered, this, [this]()
-    {
-        emit stopTaskClicked();
-    });
+    connect(stopTaskAct, &QAction::triggered, this, &TrayManager::emitStopTaskClicked);
 
     trackerAct = new QAction(tr("Track computer activities"), this);
     trackerAct->setCheckable(true);
@@ -288,11 +282,11 @@ bool TrayManager::areMenusEqual(QMenu *menu1, QMenu *menu2) {
         return false; // different lengths
     }
     for (int i = 0; i < menu1->actions().length(); i++) {
-        if (QString::compare(menu1->actions().at(i)->text(), menu2->actions().at(i)->text()) != 0) {
+        if (QString::compare(menu1->actions()[i]->text(), menu2->actions()[i]->text()) != 0) {
             return false; // strings are not equal
         }
-        if (menu1->actions().at(i)->isCheckable() == menu2->actions().at(i)->isCheckable()
-            && menu1->actions().at(i)->isChecked() != menu2->actions().at(i)->isChecked()) {
+        if (menu1->actions()[i]->isCheckable() == menu2->actions()[i]->isCheckable()
+            && menu1->actions()[i]->isChecked() != menu2->actions()[i]->isChecked()) {
             return false; // it's a checkbox, but has different state
         }
     }
@@ -337,6 +331,14 @@ void TrayManager::setWidget(Widget *widget) {
     widget->setMenu(trayMenu);
 }
 
+
+void TrayManager::emitStartTaskClicked() {
+    emit startTaskClicked();
+}
+
+void TrayManager::emitStopTaskClicked() {
+    emit stopTaskClicked();
+}
 
 void TrayManager::onAppClose()
 {

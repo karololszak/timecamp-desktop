@@ -11,8 +11,7 @@ Q_OBJECT
 public:
 
     static WindowEventsManager &instance();
-
-    ~WindowEventsManager() override = default;
+    virtual ~WindowEventsManager() = default;
     WindowEvents *getCaptureEventsThread() const;
 
 signals:

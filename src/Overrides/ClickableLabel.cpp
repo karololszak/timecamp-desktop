@@ -5,7 +5,7 @@ ClickableLabel::ClickableLabel(QWidget *parent, Qt::WindowFlags f)
     this->setCursor(Qt::PointingHandCursor);
 }
 
-ClickableLabel::~ClickableLabel() = default;
+ClickableLabel::~ClickableLabel() {}
 
 void ClickableLabel::mousePressEvent(QMouseEvent *event) {
     emit clicked();

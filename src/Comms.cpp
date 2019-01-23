@@ -161,16 +161,16 @@ void Comms::reportApp(AppData *app)
 }
 
 
-void Comms::sendAppData(const QVector<AppData> *appList)
+void Comms::sendAppData(QVector<AppData> *appList)
 {
-    bool canSendActivityInfo = !settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("dontCollectComputerActivity")).toBool();
-    bool canSendWindowTitles = settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("collectWindowTitles")).toBool();
+    bool canSendActivityInfo = !settings.value(QString(SETT_WEB_SETTINGS_PREFIX) + QString("dontCollectComputerActivity")).toBool();
+    bool canSendWindowTitles = settings.value(QString(SETT_WEB_SETTINGS_PREFIX) + QString("collectWindowTitles")).toBool();
 
     QUrlQuery params = apiHelper->getDefaultApiParams();
 
     int count = 0;
 
-    for (const AppData &app: *appList) {
+    for (AppData app: *appList) {
 /*
     qDebug() << "[NOTIFY OF APP]";
     qDebug() << "getAppName: " << app.getAppName();
@@ -188,33 +188,33 @@ void Comms::sendAppData(const QVector<AppData> *appList)
 
         // build weird GET params array
 
-        QString base_str = QStringLiteral("computer_activities") + QStringLiteral("[") + QString::number(count) + QStringLiteral("]");
+        QString base_str = QString("computer_activities") + QString("[") + QString::number(count) + QString("]");
 
         if (canSendActivityInfo) {
-            params.addQueryItem(base_str + QStringLiteral("[application_name]"), app.getAppName());
+            params.addQueryItem(base_str + QString("[application_name]"), app.getAppName());
 
             if (canSendWindowTitles) {
-                params.addQueryItem(base_str + QStringLiteral("[window_title]"), app.getWindowName());
+                params.addQueryItem(base_str + QString("[window_title]"), app.getWindowName());
 
                 // "Web Browser App" when appName is Internet but no domain
-                if (!app.getAdditionalInfo().isEmpty()) {
-                    params.addQueryItem(base_str + QStringLiteral("[website_domain]"), app.getDomainFromAdditionalInfo());
+                if (app.getAdditionalInfo() != "") {
+                    params.addQueryItem(base_str + QString("[website_domain]"), app.getDomainFromAdditionalInfo());
                 }
             } else {
-                params.addQueryItem(base_str + QStringLiteral("[window_title]"), QStringLiteral(""));
+                params.addQueryItem(base_str + QString("[window_title]"), "");
             }
 
         } else { // can't send activity info, collect_computer_activities == 0
-            params.addQueryItem(base_str + QStringLiteral("[application_name]"), SETT_HIDDEN_COMPUTER_ACTIVITIES_CONST_NAME);
-            params.addQueryItem(base_str + QStringLiteral("[window_title]"), QStringLiteral(""));
+            params.addQueryItem(base_str + QString("[application_name]"), SETT_HIDDEN_COMPUTER_ACTIVITIES_CONST_NAME);
+            params.addQueryItem(base_str + QString("[window_title]"), "");
         }
 
         QString start_time = Formatting::DateTimeTC(app.getStart());
-        params.addQueryItem(base_str + QStringLiteral("[start_time]"), start_time);
+        params.addQueryItem(base_str + QString("[start_time]"), start_time);
 //            qDebug() << "converted start_time: " << start_time;
 
         QString end_time = Formatting::DateTimeTC(app.getEnd());
-        params.addQueryItem(base_str + QStringLiteral("[end_time]"), end_time);
+        params.addQueryItem(base_str + QString("[end_time]"), end_time);
 //            qDebug() << "converted end_time: " << end_time;
 
         count++;
@@ -275,9 +275,9 @@ void Comms::userInfoReply(QByteArray buffer)
     qDebug() << "UserInfo Response: " << buffer;
 
     QJsonObject rootObject = itemDoc.object();
-    Formatting::jsonObjValToInt(rootObject, QStringLiteral("user_id"), &user_id);
-    Formatting::jsonObjValToInt(rootObject, QStringLiteral("root_group_id"), &root_group_id);
-    Formatting::jsonObjValToInt(rootObject, QStringLiteral("primary_group_id"), &primary_group_id);
+    user_id = rootObject.value("user_id").toString().toInt();
+    root_group_id = rootObject.value("root_group_id").toString().toInt();
+    primary_group_id = rootObject.value("primary_group_id").toString().toInt();
 
     settings.setValue(SETT_USER_ID, user_id);
     settings.setValue(SETT_ROOT_GROUP_ID, root_group_id);
@@ -298,28 +298,28 @@ void Comms::getSettings()
     QUrlQuery params = apiHelper->getDefaultApiParams();
 
     // dapp settings
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("close_agent")); // bool: can close app?
+    params.addQueryItem("name[]", "close_agent"); // bool: can close app?
 
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("pause_tracking")); // int: can have "Private Time"? if so, then X limit
+    params.addQueryItem("name[]", "pause_tracking"); // int: can have "Private Time"? if so, then X limit
 
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("idletime")); // int: how quick app goes into idle
+    params.addQueryItem("name[]", "idletime"); // int: how quick app goes into idle
 
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("logoffline")); // bool: show "away popup"?
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("logofflinemin")); // int: after how much of idle we start showing "away popup"
+    params.addQueryItem("name[]", "logoffline"); // bool: show "away popup"?
+    params.addQueryItem("name[]", "logofflinemin"); // int: after how much of idle we start showing "away popup"
 
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("offlineallow")); // // bool: is the offlinecustom Array set
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("offlinecustom")); // Array(String): names of activities for "away popup"
+    params.addQueryItem("name[]", "offlineallow"); // // bool: is the offlinecustom Array set
+    params.addQueryItem("name[]", "offlinecustom"); // Array(String): names of activities for "away popup"
 
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("dontCollectComputerActivity")); // bool: BOOL_COLLECT_COMPUTER_ACTIVITIES if true, send only "computer activity"
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("collectWindowTitles")); // bool: save windowTitles?
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("logOnlyActivitiesWithTasks")); // bool: tracking only when task selected
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("make_screenshots")); // bool: take screenshots?
+    params.addQueryItem("name[]", "dontCollectComputerActivity"); // bool: BOOL_COLLECT_COMPUTER_ACTIVITIES if true, send only "computer activity"
+    params.addQueryItem("name[]", "collectWindowTitles"); // bool: save windowTitles?
+    params.addQueryItem("name[]", "logOnlyActivitiesWithTasks"); // bool: tracking only when task selected
+    params.addQueryItem("name[]", "make_screenshots"); // bool: take screenshots?
 
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("group_working_time_limit")); // Array(int): stop tracking after "daily hours limit"
+    params.addQueryItem("name[]", "group_working_time_limit"); // Array(int): stop tracking after "daily hours limit"
 
     // auto mode:
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("tt_window_on_no_task")); // bool: "Display a window to choose a task, when Agent can't match any keyword in Auto Mode"
-    params.addQueryItem(QStringLiteral("name[]"), QStringLiteral("turnoff_tt_after")); // int: auto tracking off, after X
+    params.addQueryItem("name[]", "tt_window_on_no_task"); // bool: "Display a window to choose a task, when Agent can't match any keyword in Auto Mode"
+    params.addQueryItem("name[]", "turnoff_tt_after"); // int: auto tracking off, after X
 
     // probably server only:
 //    params.addQueryItem("name[]", "form_scheduler"); // bool: "Allow users to log overtime activities"
@@ -348,17 +348,17 @@ void Comms::settingsReply(QByteArray buffer)
     for (QJsonValueRef val: rootArray) {
         QJsonObject obj = val.toObject();
 //        qDebug() << obj.value("name").toString() << ": " << obj.value("value").toString();
-        settings.setValue(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + obj.value(QStringLiteral("name")).toString(), obj.value(QStringLiteral("value")).toString()); // save web settings to our settingsstore
+        settings.setValue(QString(SETT_WEB_SETTINGS_PREFIX) + obj.value("name").toString(), obj.value("value").toString()); // save web settings to our settingsstore
     }
     settings.sync();
 
-    qDebug() << "SETT idletime: " << settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("idletime")).toInt();
-    qDebug() << "SETT logoffline: " << settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("logoffline")).toBool();
-    qDebug() << "SETT logofflinemin: " << settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("logofflinemin")).toInt();
+    qDebug() << "SETT idletime: " << settings.value(QString(SETT_WEB_SETTINGS_PREFIX) + QString("idletime")).toInt();
+    qDebug() << "SETT logoffline: " << settings.value(QString(SETT_WEB_SETTINGS_PREFIX) + QString("logoffline")).toBool();
+    qDebug() << "SETT logofflinemin: " << settings.value(QString(SETT_WEB_SETTINGS_PREFIX) + QString("logofflinemin")).toInt();
     qDebug() << "SETT dontCollectComputerActivity: "
-            << settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("dontCollectComputerActivity")).toBool();
+            << settings.value(QString(SETT_WEB_SETTINGS_PREFIX) + QString("dontCollectComputerActivity")).toBool();
     qDebug() << "SETT collectWindowTitles: "
-            << settings.value(QStringLiteral(SETT_WEB_SETTINGS_PREFIX) + QStringLiteral("collectWindowTitles")).toBool();
+            << settings.value(QString(SETT_WEB_SETTINGS_PREFIX) + QString("collectWindowTitles")).toBool();
 }
 
 void Comms::getTasks()
@@ -378,11 +378,10 @@ void Comms::tasksReply(QByteArray buffer)
     QJsonObject rootObject = itemDoc.object();
     for (auto oneTaskJSON: rootObject) {
         QJsonObject oneTask = oneTaskJSON.toObject();
-        qint64 task_id = -1;
-        Formatting::jsonObjValToInt(oneTask, QStringLiteral("task_id"), &task_id);
-        QString name = oneTask.value(QStringLiteral("name")).toString();
-        QString tags = oneTask.value(QStringLiteral("tags")).toString();
-        auto * impTask = new Task(task_id);
+        qint64 task_id = oneTask.value("task_id").toString().toLongLong();
+        QString name = oneTask.value("name").toString();
+        QString tags = oneTask.value("tags").toString();
+        Task* impTask = new Task(task_id);
         impTask->setName(name);
         impTask->setKeywords(tags);
         DbManager::instance().addToTaskList(impTask);
@@ -469,15 +468,15 @@ void Comms::postRequest(QUrl endpointUrl, QUrlQuery params)
 void Comms::timerStart(qint64 taskID, qint64 entryID, qint64 startedAtInMS)
 {
     QUrlQuery params = apiHelper->getDefaultApiParams();
-    params.addQueryItem(QStringLiteral("action"), QStringLiteral("start"));
+    params.addQueryItem("action", "start");
     if (taskID > 0) {
-        params.addQueryItem(QStringLiteral("task_id"), QString::number(taskID));
+        params.addQueryItem("task_id", QString::number(taskID));
     }
     if (entryID > 0) {
-        params.addQueryItem(QStringLiteral("task_id"), QString::number(entryID));
+        params.addQueryItem("task_id", QString::number(entryID));
     }
     if (startedAtInMS > 0) {
-        params.addQueryItem(QStringLiteral("started_at"), Formatting::DateTimeTC(startedAtInMS));
+        params.addQueryItem("started_at", Formatting::DateTimeTC(startedAtInMS));
     }
     this->postRequest(apiHelper->timerUrl(), params);
 }
@@ -485,12 +484,12 @@ void Comms::timerStart(qint64 taskID, qint64 entryID, qint64 startedAtInMS)
 void Comms::timerStop(qint64 timerID, qint64 stoppedAtInMS)
 {
     QUrlQuery params = apiHelper->getDefaultApiParams();
-    params.addQueryItem(QStringLiteral("action"), QStringLiteral("stop"));
+    params.addQueryItem("action", "stop");
     if (timerID > 0) {
-        params.addQueryItem(QStringLiteral("timer_id"), QString::number(timerID));
+        params.addQueryItem("timer_id", QString::number(timerID));
     }
     if (stoppedAtInMS > 0) {
-        params.addQueryItem(QStringLiteral("stopped_at"), Formatting::DateTimeTC(stoppedAtInMS));
+        params.addQueryItem("stopped_at", Formatting::DateTimeTC(stoppedAtInMS));
     }
     this->postRequest(apiHelper->timerUrl(), params);
 }
@@ -503,6 +502,6 @@ void Comms::timerStatus()
     }
     lastTimerStatusCheck = now;
     QUrlQuery params = apiHelper->getDefaultApiParams();
-    params.addQueryItem(QStringLiteral("action"), QStringLiteral("status"));
+    params.addQueryItem("action", "status");
     this->postRequest(apiHelper->timerUrl(), params);
 }

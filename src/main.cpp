@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
         qDebug() << "\tLocation " << i << QLibraryInfo::location(QLibraryInfo::LibraryLocation(i));
     }
     qDebug() << "App Location: " << QCoreApplication::applicationDirPath();
-    qDebug() << "qt.conf: " << QDir(QCoreApplication::applicationDirPath()).exists(QStringLiteral("qt.conf"));
+    qDebug() << "qt.conf: " << QDir(QCoreApplication::applicationDirPath()).exists("qt.conf");
     qDebug() << "$PATH: " << qgetenv("PATH");
 #ifdef Q_OS_LINUX
     qInfo() << "$APPIMAGE: " << qgetenv("APPIMAGE");
@@ -101,12 +101,12 @@ int main(int argc, char *argv[])
 
     // set the app icon
     QIcon appIcon = QIcon(MAIN_ICON);
-    appIcon.addFile(QStringLiteral(":/Icons/AppIcon_256.png"), QSize(256, 256));
-    appIcon.addFile(QStringLiteral(":/Icons/AppIcon_128.png"), QSize(128, 128));
-    appIcon.addFile(QStringLiteral(":/Icons/AppIcon_64.png"), QSize(64, 64));
-    appIcon.addFile(QStringLiteral(":/Icons/AppIcon_48.png"), QSize(48, 48));
-    appIcon.addFile(QStringLiteral(":/Icons/AppIcon_32.png"), QSize(32, 32));
-    appIcon.addFile(QStringLiteral(":/Icons/AppIcon_16.png"), QSize(16, 16));
+    appIcon.addFile(":/Icons/AppIcon_256.png", QSize(256, 256));
+    appIcon.addFile(":/Icons/AppIcon_128.png", QSize(128, 128));
+    appIcon.addFile(":/Icons/AppIcon_64.png", QSize(64, 64));
+    appIcon.addFile(":/Icons/AppIcon_48.png", QSize(48, 48));
+    appIcon.addFile(":/Icons/AppIcon_32.png", QSize(32, 32));
+    appIcon.addFile(":/Icons/AppIcon_16.png", QSize(16, 16));
     // all of these: see "TimeCampDesktop.qrc"
     // order matters! :( paths are of the qrc standard,
     // would be pointless to store them all in another file

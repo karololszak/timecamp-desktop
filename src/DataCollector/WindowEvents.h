@@ -18,7 +18,7 @@ signals:
     void noLongerAwayShowPopup(unsigned long); // Signals cannot be declared virtual
 
 protected:
-    void run() override = 0;
+    virtual void run() = 0;
     virtual unsigned long getIdleTime() = 0;
     AppData static * logAppName(QString appName, QString windowName, QString additionalInfo);
     FirefoxUtils *firefoxUtils;

@@ -19,8 +19,8 @@ namespace LOGUTILS {
 
     void initLogFileName() {
         logFileName = QString(logFolderName + "/Log_%1__%2.txt")
-            .arg(QDate::currentDate().toString(QStringLiteral("yyyy_MM_dd")))
-            .arg(QTime::currentTime().toString(QStringLiteral("hh_mm_ss_zzz")));
+            .arg(QDate::currentDate().toString("yyyy_MM_dd"))
+            .arg(QTime::currentTime().toString("hh_mm_ss_zzz"));
     }
 
     /**
@@ -94,24 +94,24 @@ namespace LOGUTILS {
 #endif
 
         QString txt;
-        txt += QLatin1String("[");
+        txt += "[";
         txt += timestring;
-        txt += QLatin1String("] ");
+        txt += "] ";
         switch (type) {
             case QtDebugMsg:
-                txt += QStringLiteral("Debug:\t%1").arg(msg);
+                txt += QString("Debug:\t%1").arg(msg);
                 break;
             case QtInfoMsg:
-                txt += QStringLiteral("Info:\t%1").arg(msg);
+                txt += QString("Info:\t%1").arg(msg);
                 break;
             case QtWarningMsg:
-                txt += QStringLiteral("Warning:\t%1").arg(msg);
+                txt += QString("Warning:\t%1").arg(msg);
                 break;
             case QtCriticalMsg:
-                txt += QStringLiteral("Critical:\t%1").arg(msg);
+                txt += QString("Critical:\t%1").arg(msg);
                 break;
             case QtFatalMsg:
-                txt += QStringLiteral("Fatal:\t%1").arg(msg);
+                txt += QString("Fatal:\t%1").arg(msg);
                 break;
         }
 
