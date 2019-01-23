@@ -186,45 +186,39 @@ void Comms::sendAppData(QVector<AppData> *appList)
 //    qDebug() << "getStart: " << app->getStart();
 //    qDebug() << "getEnd: " << app->getEnd();
 
-        if (app.getAppName() == "IDLE" || app.getWindowName() == "IDLE") {
-            continue;
-        }
+        if (app.getAppName() != "IDLE" && app.getWindowName() != "IDLE") {
+            QString base_str = QString("computer_activities") + QString("[") + QString::number(count) + QString("]");
 
-        QString base_str = QString("computer_activities") + QString("[") + QString::number(count) + QString("]");
-
-        if (canSendActivityInfo) {
-            QString tempAppName = app.getAppName();
-            if (tempAppName.isEmpty()) {
-                tempAppName = "explorer2";
-            }
-
-            params.addQueryItem(base_str + QString("[application_name]"), tempAppName);
-
-            if (canSendWindowTitles) {
-                params.addQueryItem(base_str + QString("[window_title]"), app.getWindowName());
-
-                // "Web Browser App" when appName is Internet but no domain
-                if (app.getAdditionalInfo() != "") {
-                    params.addQueryItem(base_str + QString("[website_domain]"), app.getDomainFromAdditionalInfo());
+            if (canSendActivityInfo) {
+                QString tempAppName = app.getAppName();
+                if(tempAppName == ""){
+                    tempAppName = "explorer2";
                 }
-            } else {
+                params.addQueryItem(base_str + QString("[application_name]"), tempAppName);
+                if (canSendWindowTitles) {
+                    params.addQueryItem(base_str + QString("[window_title]"), app.getWindowName());
+
+                    // "Web Browser App" when appName is Internet but no domain
+                    if (app.getAdditionalInfo() != "") {
+                        params.addQueryItem(base_str + QString("[website_domain]"), app.getDomainFromAdditionalInfo());
+                    }
+                } else {
+                    params.addQueryItem(base_str + QString("[window_title]"), "");
+                }
+            } else { // can't send activity info, collect_computer_activities == 0
+                params.addQueryItem(base_str + QString("[application_name]"), "computer activity");
                 params.addQueryItem(base_str + QString("[window_title]"), "");
             }
 
-        } else { // can't send activity info, collect_computer_activities == 0
-            params.addQueryItem(base_str + QString("[application_name]"), SETT_HIDDEN_COMPUTER_ACTIVITIES_CONST_NAME);
-            params.addQueryItem(base_str + QString("[window_title]"), "");
-        }
-
-        QString start_time = QDateTime::fromMSecsSinceEpoch(app.getStart()).toString(Qt::ISODate).replace("T", " ");
-        params.addQueryItem(base_str + QString("[start_time]"), start_time);
+            QString start_time = QDateTime::fromMSecsSinceEpoch(app.getStart()).toString(Qt::ISODate).replace("T", " ");
+            params.addQueryItem(base_str + QString("[start_time]"), start_time);
 //            qDebug() << "converted start_time: " << start_time;
 
-        QString end_time = QDateTime::fromMSecsSinceEpoch(app.getEnd()).toString(Qt::ISODate).replace("T", " ");
-        params.addQueryItem(base_str + QString("[end_time]"), end_time);
+            QString end_time = QDateTime::fromMSecsSinceEpoch(app.getEnd()).toString(Qt::ISODate).replace("T", " ");
+            params.addQueryItem(base_str + QString("[end_time]"), end_time);
 //            qDebug() << "converted end_time: " << end_time;
-
-        count++;
+            count++;
+        }
         lastSync = app.getEnd(); // set our internal variable to value from last app
     }
 
