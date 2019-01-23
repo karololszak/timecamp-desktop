@@ -29,7 +29,7 @@ public:
     void timedUpdates();
     void tryToSendAppData();
 
-    void netRequest(QNetworkRequest, QNetworkAccessManager::Operation = QNetworkAccessManager::GetOperation, QByteArray = nullptr);
+    void netRequest(QNetworkRequest, QNetworkAccessManager::Operation, QByteArray);
 
     bool updateApiKeyFromSettings();
 

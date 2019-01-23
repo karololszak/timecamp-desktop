@@ -292,7 +292,7 @@ void Comms::getUserInfo()
 {
     QNetworkRequest request(getApiUrl("/user", "json"));
     commsReplies.insert(request.url(), &Comms::userInfoReply);
-    this->netRequest(request);
+    this->netRequest(request, QNetworkAccessManager::GetOperation);
 }
 
 void Comms::userInfoReply(QNetworkReply *reply)
@@ -371,7 +371,7 @@ void Comms::getSettings()
     QNetworkRequest request(serviceURL);
 
     commsReplies.insert(request.url(), &Comms::settingsReply);
-    this->netRequest(request);
+    this->netRequest(request, QNetworkAccessManager::GetOperation);
 }
 
 void Comms::settingsReply(QNetworkReply *reply)
@@ -406,7 +406,7 @@ void Comms::getTasks()
 {
     QNetworkRequest request(getApiUrl("/tasks", "json"));
     commsReplies.insert(request.url(), &Comms::tasksReply);
-    this->netRequest(request);
+    this->netRequest(request, QNetworkAccessManager::GetOperation);
 }
 
 void Comms::tasksReply(QNetworkReply *reply)
@@ -447,7 +447,6 @@ void Comms::genericReply(QNetworkReply *reply)
     emit gotGenericReply(reply);
 
     QString stringUrl = reply->url().toString();
-    // magic: if the stringUrl is in commsReplies Map(/Hash/Array) struct, then call the associated function
     auto &fn = commsReplies[stringUrl];
     if(fn) {
         fn(this, reply);
@@ -455,7 +454,7 @@ void Comms::genericReply(QNetworkReply *reply)
 }
 
 
-void Comms::netRequest(QNetworkRequest request, QNetworkAccessManager::Operation netOp, QByteArray data) // default params in Comms.h
+void Comms::netRequest(QNetworkRequest request, QNetworkAccessManager::Operation netOp, QByteArray data)
 {
     // connect the callback function first
     QMetaObject::Connection conn2;
