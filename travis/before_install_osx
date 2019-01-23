@@ -1,4 +1,0 @@
-#!/bin/sh -xe
-
-brew update
-#brew cleanup

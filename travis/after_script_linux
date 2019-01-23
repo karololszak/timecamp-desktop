@@ -1,8 +1,0 @@
-#!/bin/bash -xe
-
-if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then
-    echo "Unbundled dependant libs (they need to be in the system!):"
-    find $TARGET -executable -type f -exec ldd {} \; | grep -v "timecamp-desktop" | cut -d " " -f 2-3  | sort | uniq
-    wget -c https://github.com/probonopd/uploadtool/raw/master/upload.sh
-    bash upload.sh ${BUNDLE_NAME}*.AppImage*
-fi

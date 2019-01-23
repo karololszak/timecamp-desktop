@@ -1,5 +1,0 @@
-#!/bin/bash -x
-
-sudo apt-get -y install qt59base qt59webengine qt59x11extras tree ninja-build
-source /opt/qt*/bin/qt*-env.sh
-export PATH=/opt/qt59/bin:$PATH
