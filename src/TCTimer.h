@@ -42,7 +42,6 @@ public slots:
     void startTaskByID(qint64 taskID);
     void startTimerSlot();
     void stopTimerSlot();
-    void startIfNotRunningYet();
 };
 
 #endif //TIMECAMPDESKTOP_TCTIMER_H

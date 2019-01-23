@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
     QObject::connect(autoTracking, &AutoTracking::foundTask, TimeCampTimer, &TCTimer::startTaskByTaskObj);
     QObject::connect(trayManager, &TrayManager::taskSelected, TimeCampTimer, &TCTimer::startTaskByID);
 
-    QObject::connect(theWidget, &FloatingWidget::taskNameClicked, TimeCampTimer, &TCTimer::startIfNotRunningYet);
+    QObject::connect(theWidget, &FloatingWidget::taskNameClicked, TimeCampTimer, &TCTimer::startTimerSlot);
     QObject::connect(theWidget, &FloatingWidget::taskNameClicked, &mainWidget, &MainWidget::chooseTask);
 
     QObject::connect(theWidget, &FloatingWidget::playButtonClicked, TimeCampTimer, &TCTimer::startTimerSlot);

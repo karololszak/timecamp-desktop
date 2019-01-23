@@ -144,10 +144,3 @@ void TCTimer::stopTimerSlot()
 {
     this->stop();
 }
-
-void TCTimer::startIfNotRunningYet()
-{
-    if (!isRunning) {
-        this->start();
-    }
-}
