@@ -421,6 +421,8 @@ void Comms::genericReply(QNetworkReply *reply)
         return;
     } else {
         qDebug() << "Network success";
+        buffer.truncate(MAX_LOG_TEXT_LENGTH);
+        qDebug() << "Data: " << buffer;
     }
 
     QString stringUrl = reply->url().toString();
