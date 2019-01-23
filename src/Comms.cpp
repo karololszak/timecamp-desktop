@@ -49,17 +49,7 @@ void Comms::timedUpdates()
         return;
     }
 
-    // otherwise (if we have api key), send apps data
-    tryToSendAppData();
-
-    // and (if we still have api key), update settings
-    getUserInfo();
-    getSettings();
-    getTasks();
-}
-
-void Comms::tryToSendAppData()
-{
+    // otherwise (if we have key), send apps data
     QVector<AppData> appList;
     try {
         appList = DbManager::instance().getAppsSinceLastSync(lastSync); // get apps since last sync; SQL queries for LIMIT = MAX_ACTIVITIES_BATCH_SIZE
@@ -72,7 +62,7 @@ void Comms::tryToSendAppData()
     // send only if there is anything to send (0 is if "computer activities" are disabled, 1 is sometimes only with "IDLE" - don't send that)
     if (appList.length() > 1 || (appList.length() == 1 && appList.first().getAppName() != "IDLE")) {
         sendAppData(&appList);
-        if (appList.length() >= MAX_ACTIVITIES_BATCH_SIZE) {
+        if(appList.length() >= MAX_ACTIVITIES_BATCH_SIZE){
             qInfo() << "[AppList] was big";
             lastBatchBig = true;
         } else {
@@ -80,6 +70,11 @@ void Comms::tryToSendAppData()
             retryCount = 0; // we send small amount of activities, so our last push must've been success
         }
     }
+
+    // and (if we still have api key), update settings
+    getUserInfo();
+    getSettings();
+    getTasks();
 }
 
 void Comms::clearLastApp()
