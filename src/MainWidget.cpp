@@ -118,6 +118,7 @@ void MainWidget::twoSecTimerTimeout()
 void MainWidget::setupWebview()
 {
     QTWEView = new TCWebEngineView(this);
+    QTWEView->setContextMenuPolicy(Qt::NoContextMenu); // disable context menu in embedded webpage
     QTWEView->setAcceptDrops(false);
     QTWEView->setAttribute(Qt::WA_TranslucentBackground);
     QTWEView->setStyleSheet("background:transparent");

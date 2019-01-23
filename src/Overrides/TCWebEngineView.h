@@ -14,7 +14,6 @@ public:
 
 protected:
     QWebEngineView *createWindow(QWebEnginePage::WebWindowType type) override;
-    void contextMenuEvent(QContextMenuEvent *event) override;
 
 private:
     TCWebEngineView *result;
