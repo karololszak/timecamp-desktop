@@ -22,7 +22,6 @@
 #include "Widget/FloatingWidget.h"
 
 #include "third-party/vendor/de/skycoder42/qhotkey/QHotkey/qhotkey.h"
-#include "third-party/vendor/de/skycoder42/qsingleinstance/QSingleInstance/qsingleinstance.h"
 #include "third-party/QTLogRotation/logutils.h"
 
 void firstRun()
@@ -65,15 +64,6 @@ int main(int argc, char *argv[])
 
     // standard Qt init
     QApplication app(argc, argv);
-    QSingleInstance instance;
-
-    if (instance.process()) {
-        if (!instance.isMaster()) {
-            return 0;
-        }
-    } else {
-        return -1;
-    }
 
     qInfo() << "OS:\t" << QSysInfo::prettyProductName() << ", " << QSysInfo::currentCpuArchitecture();
     qDebug() << "build ABI: " << QSysInfo::buildAbi();

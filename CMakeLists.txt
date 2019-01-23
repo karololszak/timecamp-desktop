@@ -69,7 +69,7 @@ foreach (plugin ${Qt5Sql_PLUGINS})
     #    endif()
 endforeach ()
 
-ADD_DEFINITIONS(-DUNICODE -D_UNICODE -DPSAPI_VERSION=1 -DQHOTKEY_LIB -DQHOTKEY_LIB_BUILD)
+ADD_DEFINITIONS(-DUNICODE -D_UNICODE -DPSAPI_VERSION=1 -DQHOTKEY_LIB -DQHOTKEY_LIB_BUILD -DQT_USE_QSTRINGBUILDER)
 
 if ("${CMAKE_CXX_COMPILER}" MATCHES "clang")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-limit-debug-info")
@@ -95,7 +95,7 @@ list(APPEND SOURCE_FILES
         "src/TrayManager.cpp"
         "src/TCTimer.cpp"
         "src/Formatting.cpp"
-        "third-party/lz4/lib/lz4.c"
+        "third-party/mozilla_lz4/lz4.c"
         "third-party/QTLogRotation/logutils.cpp"
         "src/DataCollector/WindowEvents.cpp"
         "src/Widget/Widget.cpp"
@@ -156,13 +156,6 @@ list(APPEND SOURCE_FILES
         "${QHOTKEY_PATH}/QHotkey"
         "${QHOTKEY_PATH}/qhotkey.cpp"
         "${QHOTKEY_PATH}/qhotkey_p.h"
-        )
-
-set(QSINGLEINSTANCE_PATH "third-party/vendor/de/skycoder42/qsingleinstance/QSingleInstance")
-list(APPEND SOURCE_FILES
-        "${QSINGLEINSTANCE_PATH}/clientinstance.cpp"
-        "${QSINGLEINSTANCE_PATH}/qsingleinstance.cpp"
-        "${QSINGLEINSTANCE_PATH}/qsingleinstance_p.cpp"
         )
 
 if (WIN32)
