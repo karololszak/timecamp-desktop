@@ -76,10 +76,6 @@ int main(int argc, char *argv[])
     }
     qInfo() << "Loc: " << QCoreApplication::applicationDirPath() << '\n';
     qInfo() << "qt.conf " << QDir(QCoreApplication::applicationDirPath()).exists("qt.conf") << '\n';
-#ifdef Q_OS_LINUX
-    qInfo() << "$APPIMAGE: " << getenv("APPIMAGE");
-    qInfo() << "$APPDIR: " << getenv("APPDIR");
-#endif
 
     // check if it's a first run, and i.e. on Mac ask for permissions
     firstRun();
