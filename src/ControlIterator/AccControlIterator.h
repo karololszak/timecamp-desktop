@@ -1,4 +1,3 @@
-#pragma once
 #include "IControlIterator.h"
 
 #include <Oleacc.h>
