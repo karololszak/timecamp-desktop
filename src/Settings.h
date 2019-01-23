@@ -6,7 +6,7 @@
 #define ORGANIZATION_DOMAIN "TimeCamp.com"
 
 #define APPLICATION_NAME "TimeCamp Desktop"
-#define APPLICATION_VERSION "2.1.0.0"
+#define APPLICATION_VERSION "2.0.0.0"
 
 #define WINDOW_NAME "TimeCamp"
 #define MARKETING_URL "https://www.timecamp.com/"
