@@ -5,9 +5,4 @@ mv $SRC/"TimeCampDesktop.app" $TARGET/"TimeCamp Desktop.app"
 cd $TARGET
 
 # Run QT tool to deploy
-curl -o /tmp/macdeployqtfix.py https://raw.githubusercontent.com/aurelien-rainone/macdeployqtfix/master/macdeployqtfix.py
-
-macdeployqt "${BUNDLE_NAME}" -dmg
-
-python /tmp/macdeployqtfix.py $TARGET/"TimeCamp Desktop.app" /usr/local/Cellar/qt/$HOMEBREW_QT5_VERSION/
-
+macdeployqt "${BUNDLE_NAME}"

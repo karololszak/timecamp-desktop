@@ -48,11 +48,3 @@ after_success:
 after_script:
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source ./travis/after_script_linux ; fi
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then source ./travis/after_script_osx ; fi
-
-
-deploy:
-  provider: releases
-  file: $TARGET/"TimeCamp Desktop.dmg"
-  skip_cleanup: true
-  on:
-    condition: $TRAVIS_OS_NAME = osx

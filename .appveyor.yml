@@ -33,10 +33,3 @@ after_build:
 artifacts:
   - path: Release
     type: zip
-
-
-deploy:
-  provider: GitHub
-  artifact: Release.zip
-  draft: false
-  prerelease: true
