@@ -30,11 +30,9 @@ public:
     void tryToSendAppData();
 
     void netRequest(QNetworkRequest, QNetworkAccessManager::Operation = QNetworkAccessManager::GetOperation, QByteArray = nullptr);
-    void postRequest(QUrl endpointUrl, QUrlQuery params);
 
     bool updateApiKeyFromSettings();
 
-    QUrlQuery getApiParams();
     QUrl getApiUrl(QString, QString);
     const QString &getApiKey() const;
 
@@ -58,7 +56,7 @@ private:
 
 signals:
     void DbSaveApp(AppData *);
-    void gotGenericReply(QNetworkReply *reply, QByteArray buffer);
+    void gotGenericReply(QNetworkReply *reply);
 
 public slots:
     void appDataReply(QByteArray buffer);
