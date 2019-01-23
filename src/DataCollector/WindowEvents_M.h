@@ -17,11 +17,10 @@ Q_OBJECT
 public:
     QString GetProcWindowName(QString processName);
 //    QString GetProcNameFromPath(QString processName);
-    QString GetAdditionalInfo(QString processName, QString appTitle);
+    QString GetAdditionalInfo(QString processName);
     const void didActivateApp(void *anNSnotification) const;
     void *getWindowScriptObj;
     void initAppleScript();
-    virtual ~WindowEvents_M();
 
 public slots:
     void GetActiveApp(QString processName = "");

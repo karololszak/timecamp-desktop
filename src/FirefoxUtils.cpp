@@ -24,7 +24,6 @@
 #include <QJsonArray>
 #include <QJsonValue>
 #include <cstring>
-#include <QtCore/QThread>
 
 #include "third-party/mozilla_lz4/lz4.h"
 
@@ -32,16 +31,16 @@ const char mozlz4_magic[] = {109, 111, 122, 76, 122, 52, 48, 0};  /* "mozLz40\0"
 const int decomp_size = 4;  /* 4 bytes size come after the header */
 const size_t magic_size = sizeof mozlz4_magic;
 
-bool FirefoxUtils::comparatorGreater(const std::pair<QString, time_t> &left, const std::pair<QString, time_t> &right)
+bool comparatorGreater(const std::pair<QString, time_t> &left, const std::pair<QString, time_t> &right)
 {
     return left.second > right.second;
 }
 
-void *FirefoxUtils::readFileToMemory(const char *filename, size_t *readSize)
+void *readFileToMemory(const char *filename, size_t *readSize)
 {
     size_t filesize = 0;
-    void *returnValue = nullptr;
-//    qDebug() << "[FirefoxUtils-readFileToMemory] Reading file: " << filename;
+    void *returnValue = 0;
+    qDebug() << "[FirefoxUtils-readFileToMemory] Reading file: " << filename;
     FILE *fileDescriptor = fopen(filename, "rb");
 
     if (!fileDescriptor) {
@@ -64,7 +63,7 @@ void *FirefoxUtils::readFileToMemory(const char *filename, size_t *readSize)
 
     if (filesize != fread(returnValue, 1, filesize, fileDescriptor)) {
         free(returnValue);
-        returnValue = nullptr;
+        returnValue = 0;
     }
 
     cleanup:
@@ -79,7 +78,7 @@ void *FirefoxUtils::readFileToMemory(const char *filename, size_t *readSize)
     return returnValue;
 }
 
-QString FirefoxUtils::parseJsRecoveryFilePath(const QString &recoveryFilePath)
+QString parseJsRecoveryFilePath(const QString &recoveryFilePath)
 {
     QFile file(recoveryFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -97,10 +96,10 @@ QString FirefoxUtils::parseJsRecoveryFilePath(const QString &recoveryFilePath)
     return content;
 }
 
-QString FirefoxUtils::parseJsonlz4RecoveryFilePath(const QString &recoveryFilePath)
+QString parseJsonlz4RecoveryFilePath(const QString &recoveryFilePath)
 {
-    char *encryptedData = nullptr;
-    char *decryptedData = nullptr;
+    char *encryptedData = 0;
+    char *decryptedData = 0;
 
     size_t readSize = 0;
     size_t outputBufferSize = 0;
@@ -118,9 +117,8 @@ QString FirefoxUtils::parseJsonlz4RecoveryFilePath(const QString &recoveryFilePa
     }
     delete[] cstr_recoveryFilePath;
 
-    if (readSize < magic_size + decomp_size || memcmp(mozlz4_magic, encryptedData, magic_size) != 0) {
+    if (readSize < magic_size + decomp_size || memcmp(mozlz4_magic, encryptedData, magic_size)) {
         qDebug() << "[FirefoxUtils::parseJsonlz4RecoveryFilePath] Unsupported file format: " + recoveryFilePath;
-        free(encryptedData);
         return "";
     }
 
@@ -131,7 +129,6 @@ QString FirefoxUtils::parseJsonlz4RecoveryFilePath(const QString &recoveryFilePa
 
     if (!(decryptedData = (char *) malloc(outputBufferSize))) {
         qDebug() << "[FirefoxUtils::parseJsonlz4RecoveryFilePath] Failed to allocate a buffer for an output.";
-        free(encryptedData);
         return "";
     }
 
@@ -139,28 +136,25 @@ QString FirefoxUtils::parseJsonlz4RecoveryFilePath(const QString &recoveryFilePa
     if (decryptedDataSize < 0) {
         qDebug() << "[FirefoxUtils::parseJsonlz4RecoveryFilePath] Failed to decompress a file: " + recoveryFilePath;
         free(decryptedData);
-        free(encryptedData);
         return "";
     }
     QString qDecryptedData = QString(decryptedData);
     free(decryptedData);
-    free(encryptedData);
 
     int indexOfLastProperChar = qDecryptedData.lastIndexOf("}");
     QString cutData = qDecryptedData.left(indexOfLastProperChar + 1);
 
 //    qDebug() << "[FirefoxUtils::parseJsonlz4RecoveryFilePath] Successfully decompressed a file: " + recoveryFilePath;
-//    // Debug: write to a D:/fx.json file
-//    QString filename = "D:/fx.json";
-//    QFile file(filename);
-//    if (file.open(QIODevice::ReadWrite)) {
-//        QTextStream stream(&file);
-//        stream << cutData;
-//    }
+    QString filename = "D:/fx.json";
+    QFile file(filename);
+    if (file.open(QIODevice::ReadWrite)) {
+        QTextStream stream(&file);
+        stream << cutData;
+    }
     return cutData;
 }
 
-QString FirefoxUtils::getFirefoxConfigFilePath()
+QString getFirefoxConfigFilePath()
 {
 #ifdef Q_OS_LINUX
     QString homeDir = QStandardPaths::standardLocations(QStandardPaths::HomeLocation).first();
@@ -175,17 +169,16 @@ QString FirefoxUtils::getFirefoxConfigFilePath()
 
     QDir firefoxDir(firefoxPath);
     if (!firefoxDir.isReadable()) {
-        qInfo() << "Error: " + firefoxPath + " not found";
+        qDebug() << "Error: " + firefoxPath + " not found";
         return "";
     }
 
     firefoxDir.setFilter(QDir::Dirs | QDir::Readable);
 
 
-    QStringList dirsMatches = {"*.default", "*.default-*"};
-    QStringList dirsList = firefoxDir.entryList(dirsMatches, QDir::Dirs | QDir::Readable);
+    QStringList dirsList = firefoxDir.entryList(QStringList("*.default"), QDir::Dirs | QDir::Readable);
     if (dirsList.empty()) {
-        qInfo() << "Error: *.default directory not found in " + firefoxPath;
+        qDebug() << "Error: *.default directory not found in " + firefoxPath;
         return "";
     }
 
@@ -197,29 +190,29 @@ QString FirefoxUtils::getFirefoxConfigFilePath()
 
     /* Here I need to check both files js and jsonlz4 and detect which one was written last. */
     QString configFilePath;
-    struct stat attributes{};
+    struct stat attributes;
     std::vector<std::pair<QString, time_t> > sessionFilesVector;
 
     if (QFile::exists(lz4RecoveryFile)) {
         stat((char *) lz4RecoveryFile.toStdWString().c_str(), &attributes);
-        sessionFilesVector.emplace_back(lz4RecoveryFile, attributes.st_mtime);
+        sessionFilesVector.push_back(std::make_pair(lz4RecoveryFile, attributes.st_mtime));
         configFilePath = lz4RecoveryFile;
     }
 
     if (QFile::exists(sessionStoreFile)) {
         stat((char *) sessionStoreFile.toStdWString().c_str(), &attributes);
-        sessionFilesVector.emplace_back(sessionStoreFile, attributes.st_mtime);
+        sessionFilesVector.push_back(std::make_pair(sessionStoreFile, attributes.st_mtime));
         configFilePath = sessionStoreFile;
     }
 
     if (QFile::exists(recoveryFile)) {
         stat((char *) recoveryFile.toStdWString().c_str(), &attributes);
-        sessionFilesVector.emplace_back(recoveryFile, attributes.st_mtime);
+        sessionFilesVector.push_back(std::make_pair(recoveryFile, attributes.st_mtime));
         configFilePath = recoveryFile;
     }
 
     /* If vector is empty - return empty string. */
-    if (sessionFilesVector.empty()) {
+    if (sessionFilesVector.size() == 0) {
         return "";
     }
         /*
@@ -232,17 +225,17 @@ QString FirefoxUtils::getFirefoxConfigFilePath()
     }
 
     /* Here we sort std::vector to determine which file was written last. */
-    std::sort(sessionFilesVector.begin(), sessionFilesVector.end(), this->comparatorGreater);
+    std::sort(sessionFilesVector.begin(), sessionFilesVector.end(), comparatorGreater);
 
     return sessionFilesVector.front().first;
 }
 
-QString FirefoxUtils::getCurrentURLFromFirefoxConfig(QString &jsonConfig, QString windowName)
+QString getCurrentURLFromFirefoxConfig(QString &jsonConfig)
 {
 
     QJsonParseError error{};
     auto json = QJsonDocument::fromJson(jsonConfig.toUtf8(), &error);
-    if (error.error != QJsonParseError::NoError) {
+    if(error.error != QJsonParseError::NoError){
         qDebug() << "JSON parse error: " << error.errorString();
         return "";
     }
@@ -269,84 +262,71 @@ QString FirefoxUtils::getCurrentURLFromFirefoxConfig(QString &jsonConfig, QStrin
         return "";
     }
 
+    auto selectedTabJson = windowJson.toObject().value("selected");
+    if (selectedTabJson.isNull() || selectedTabJson.isUndefined()) {
+        qDebug() << "Failed getting 'selected' value for tab";
+        return "";
+    }
+
+    int selectedTab = selectedTabJson.toInt() - 1;
+
     auto tabsJson = windowJson.toObject().value("tabs");
     if (tabsJson.isNull() || tabsJson.isUndefined()) {
         qDebug() << "Failed getting 'tabs'";
         return "";
     }
 
-    auto tabsJsonArray = tabsJson.toArray();
-    QString finalUrl;
-
-    for (auto checkedTab: tabsJsonArray) {
-
-        if (checkedTab.isNull() || checkedTab.isUndefined()) {
-            qDebug() << "Failed getting selected tab";
-            continue;
-        }
-
-        auto entriesJson = checkedTab.toObject().value("entries");
-        if (entriesJson.isNull() || entriesJson.isUndefined()) {
-            qDebug() << "Failed getting 'entries'";
-            continue;
-        }
-
-        auto entriesJsonArray = entriesJson.toArray();
-        int lastEntryIndex = entriesJsonArray.size() - 1;
-
-        auto lastEntryJson = entriesJsonArray[lastEntryIndex];
-        if (lastEntryJson.isNull() || lastEntryJson.isUndefined()) {
-            qDebug() << "Failed getting last entry";
-            continue;
-        }
-
-        auto lastEntryJsonObject = lastEntryJson.toObject();
-        auto titleJson = lastEntryJsonObject.value("title");
-        QString titleJsonQstring = titleJson.toString();
-        if (titleJsonQstring != windowName) { // check if title matches windowName
-//            qDebug() << "Bad window name, got: " << titleJsonQstring << ", looking for: " << windowName;
-            continue;
-        }
-
-        auto urlJson = lastEntryJsonObject.value("url");
-        if (urlJson.isNull() || urlJson.isUndefined()) {
-            qDebug() << "Failed getting 'url'";
-            continue;
-        }
-        finalUrl = urlJson.toString();
-        break; // found the right one, we can skip
+    auto tabJson = tabsJson.toArray()[selectedTab];
+    if (tabJson.isNull() || tabJson.isUndefined()) {
+        qDebug() << "Failed getting selected tab";
+        return "";
     }
 
-    return finalUrl;
+    auto entriesJson = tabJson.toObject().value("entries");
+    if (entriesJson.isNull() || entriesJson.isUndefined()) {
+        qDebug() << "Failed getting 'entries'";
+        return "";
+    }
+
+    auto entriesJsonArray = entriesJson.toArray();
+    int lastEntryIndex = entriesJsonArray.size() - 1;
+
+    auto lastEntryJson = entriesJson.toArray()[lastEntryIndex];
+    if (lastEntryJson.isNull() || lastEntryJson.isUndefined()) {
+        qDebug() << "Failed getting last entry";
+        return "";
+    }
+
+    auto urlJson = lastEntryJson.toObject().value("url");
+    if (urlJson.isNull() || urlJson.isUndefined()) {
+        qDebug() << "Failed getting 'url'";
+        return "";
+    }
+
+    QString result(urlJson.toString());
+
+    return result;
 }
 
-QString FirefoxUtils::getCurrentURLFromFirefox(QString windowName)
+QString getCurrentURLFromFirefox()
 {
     QString content;
-    activeUrl.clear();
-    retries = 0;
+    QString recoveryFilePath = getFirefoxConfigFilePath();
+    QString recoveryFileExtension = QFileInfo(recoveryFilePath).completeSuffix();
 
-    while (activeUrl.isEmpty() && retries < MAX_RETRIES) {
-        if (recoveryFileExtension == "js") {
-//        qDebug("[UForegroundApp::getAdditionalInfo] Parsing JS file.");
-            content = parseJsRecoveryFilePath(recoveryFilePath);
-        } else if (recoveryFileExtension == "jsonlz4") {
+    if (recoveryFileExtension == "js") {
+        qDebug("[UForegroundApp::getAdditionalInfo] Parsing JS file.");
+        content = parseJsRecoveryFilePath(recoveryFilePath);
+    } else if (recoveryFileExtension == "jsonlz4") {
 //        qDebug("[UForegroundApp::getAdditionalInfo] Parsing json lz4 compressed file.");
-            content = parseJsonlz4RecoveryFilePath(recoveryFilePath);
-        } else {
-            qDebug("[UForegroundApp::getAdditionalInfo] Unsupported Firefox recovery file extension.");
-            return "";
-        }
-
-        activeUrl = getCurrentURLFromFirefoxConfig(content, windowName).trimmed();
-//        qDebug() << "[UForegroundApp::getAdditionalInfo] Firefox active URL: " << activeUrl;
-        retries++;
+        content = parseJsonlz4RecoveryFilePath(recoveryFilePath);
+    } else {
+        qDebug("[UForegroundApp::getAdditionalInfo] Unsupported Firefox recovery file extension.");
+        return "";
     }
 
-    return activeUrl;
-}
-FirefoxUtils::FirefoxUtils()
-{
-    recoveryFilePath = getFirefoxConfigFilePath();
-    recoveryFileExtension = QFileInfo(recoveryFilePath).completeSuffix();
+    QString activeURL = getCurrentURLFromFirefoxConfig(content);
+    qDebug() << "[UForegroundApp::getAdditionalInfo] Firefox active URL: " << activeURL;
+
+    return activeURL;
 }
