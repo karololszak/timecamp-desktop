@@ -9,7 +9,6 @@
 #define WINDOW_NAME "TimeCamp"
 #define MARKETING_URL "https://www.timecamp.com/"
 #define LOGIN_URL "https://www.timecamp.com/auth/login"
-#define APIKEY_URL "https://www.timecamp.com/auth/token"
 #define API_URL "https://desktop.timecamp.com/third_party/api"
 #define APPLICATION_URL "https://www.timecamp.com/app#/timesheets/timer"
 #define OFFLINE_URL "https://www.timecamp.com/helper/setdate/today/offline"
@@ -25,7 +24,6 @@
 // db params
 #define DB_FILENAME "localdb.sqlite"
 #define APP_ICON "AppIcon.png"
-#define DESKTOP_FILE_PATH "desktopFilePath"
 
 // connection params
 #define CONN_USER_AGENT "TC Desktop App 2.0" // hardcoded, frontend checks
@@ -62,6 +60,6 @@
 #define ACTIVITY_IDLE_NAME "IDLE"
 
 #define ACTIVITIES_SYNC_INTERVAL 30 // seconds
-#define WEBPAGE_DATA_SYNC_INTERVAL 1 // seconds
+#define WEBPAGE_DATA_SYNC_INTERVAL 2 // seconds
 
 #endif //THEGUI_SETTINGS_H

@@ -16,7 +16,7 @@
 class FirefoxUtils {
 private:
     QString getFirefoxConfigFilePath();
-    QString getCurrentURLFromFirefoxConfig(const QString &jsonConfig, const QString &windowName);
+    QString getCurrentURLFromFirefoxConfig(QString &jsonConfig, QString windowName);
 
     void *readFileToMemory(const char *filename, size_t *readSize);
     QString parseJsRecoveryFilePath(const QString &recoveryFilePath);

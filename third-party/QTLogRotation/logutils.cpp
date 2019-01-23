@@ -10,7 +10,6 @@
 #include <QDebug>
 #include <QDir>
 #include <QFileInfoList>
-#include <QStringBuilder>
 
 namespace LOGUTILS {
     static QString logFileName;
@@ -47,10 +46,10 @@ namespace LOGUTILS {
 
     bool initLogging() {
         // Create folder for logfiles if not exists
-        logFolderName = QStandardPaths::standardLocations(QStandardPaths::AppLocalDataLocation).constFirst() + QStringLiteral("/logs");
+        logFolderName = QStandardPaths::standardLocations(QStandardPaths::AppLocalDataLocation).first() + "/logs";
 
         if (!QDir(logFolderName).exists()) {
-            QDir().mkpath(logFolderName);
+            QDir().mkdir(logFolderName);
         }
 
         std::cout << "[LOG PATH] " << logFolderName.toStdString() << std::endl;
@@ -80,23 +79,39 @@ namespace LOGUTILS {
             }
         }
 
-        QDateTime now = QDateTime::currentDateTime();
-        QString txt = QLatin1String("[") + now.toString(QStringLiteral("HH:mm:ss.zzz"))+ QLatin1String("] ");
+
+        const std::time_t stdtime = std::time(nullptr);
+//    std::cout << "UTC:       " << std::put_time(std::gmtime(&stdtime), "%H:%M:%S") << '\n';
+//    std::cout << "local:     " << std::put_time(std::localtime(&stdtime), "%H:%M:%S") << '\n';
+        char timestring[100];
+
+#ifdef Q_OS_WIN
+        struct tm buf;
+      gmtime_s(&buf, &stdtime);
+      std::strftime(timestring, sizeof(timestring), "%H:%M:%S", &buf);
+#else
+        std::strftime(timestring, sizeof(timestring), "%H:%M:%S", std::gmtime(&stdtime)); // UTC, std::localtime for local
+#endif
+
+        QString txt;
+        txt += QLatin1String("[");
+        txt += timestring;
+        txt += QLatin1String("] ");
         switch (type) {
             case QtDebugMsg:
-                txt += QStringLiteral("\x1b[0mDebug:\t%1").arg(msg);
+                txt += QStringLiteral("Debug:\t%1").arg(msg);
                 break;
             case QtInfoMsg:
-                txt += QStringLiteral("\x1b[106;97mInfo:\x1b[1;96m\t%1\x1b[0m").arg(msg);
+                txt += QStringLiteral("Info:\t%1").arg(msg);
                 break;
             case QtWarningMsg:
-                txt += QStringLiteral("\x1b[103;97mWarn:\x1b[1;93m\t%1\x1b[0m").arg(msg);
+                txt += QStringLiteral("Warning:\t%1").arg(msg);
                 break;
             case QtCriticalMsg:
-                txt += QStringLiteral("\x1b[101;97mCrit:\x1b[1;91m\t%1\x1b[0m").arg(msg);
+                txt += QStringLiteral("Critical:\t%1").arg(msg);
                 break;
             case QtFatalMsg:
-                txt += QStringLiteral("\x1b[105;30mFatal:\x1b[1;95m\t%1\x1b[0m").arg(msg);
+                txt += QStringLiteral("Fatal:\t%1").arg(msg);
                 break;
         }
 

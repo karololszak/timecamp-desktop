@@ -24,7 +24,7 @@ TCWebEngineView::TCWebEngineView(QWidget *parent)
 
 TCWebEngineView::~TCWebEngineView()
 {
-    result->deleteLater();
+    delete result;
 }
 
 QWebEngineView *TCWebEngineView::createWindow(QWebEnginePage::WebWindowType type)

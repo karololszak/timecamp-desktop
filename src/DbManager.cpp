@@ -150,7 +150,7 @@ Task *DbManager::getTaskById(qint64 taskId) {
     return taskList.value(taskId);
 }
 
-void DbManager::loginLogout(bool isLoggedIn) {
+void DbManager::loginLogout(bool isLoggedIn, QString pageTitle) {
     if (!isLoggedIn) {
         this->clearTaskList();
     }

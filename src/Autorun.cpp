@@ -1,6 +1,5 @@
 #include <QtCore/QStandardPaths>
 #include <QtCore/QFile>
-#include <QtCore/QSettings>
 
 #include "Autorun.h"
 #include "Settings.h"
@@ -36,7 +35,7 @@ QAutoStart *Autorun::getAutostart() const {
 #ifdef Q_OS_LINUX
 void Autorun::addLinuxIcon()
 {
-    iconPath = QStandardPaths::standardLocations(QStandardPaths::AppLocalDataLocation).constFirst() + QStringLiteral("/") + APP_ICON; // determine where we want Linux icon
+    iconPath = QStandardPaths::standardLocations(QStandardPaths::AppLocalDataLocation).first() + "/" + APP_ICON; // determine where we want Linux icon
     QFile::copy(QStringLiteral(":/Icons/AppIcon_128.png"), iconPath); // copy from our "res"
     autostart->setExtraProperty(QAutoStart::IconName, iconPath); // set it to both autostart and startMenuEntry
 }
@@ -63,10 +62,6 @@ void Autorun::addLinuxStartMenuEntry()
 
     // push the file
     startMenuEntry->setAutoStartEnabled(true);
-
-    QSettings settings;
-    settings.setValue(DESKTOP_FILE_PATH, startMenuEntry->desktopFilePath());
-    settings.sync();
 }
 
 #endif

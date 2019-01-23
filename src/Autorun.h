@@ -29,9 +29,6 @@ private:
     QString iconPath;
     bool isAppImage;
     QAutoStart *startMenuEntry;
-public:
-    QAutoStart *getStartMenuEntry() const;
-
 #endif
 };
 

@@ -21,14 +21,6 @@ include(CMakeProjectConfig.cmake)
 set(PRODUCT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_REVISION}.${VERSION_BUILD})
 project(TimeCampDesktop VERSION ${PRODUCT_VERSION})
 
-if (DEFINED ENV{APPVEYOR_API_URL})
-    set(APPVEYOR_VERSION ${PRODUCT_VERSION}-b$ENV{APPVEYOR_BUILD_NUMBER})
-    message("Calling $ENV{APPVEYOR_API_URL}/api/build with Version: ${APPVEYOR_VERSION}")
-#    execute_process(COMMAND curl -v -H "Accept: application/json" -H "Content-Type: application/json" -X PUT -d "'{\"version\": \"${APPVEYOR_VERSION}\"}'" $ENV{APPVEYOR_API_URL}api/build)
-    execute_process(COMMAND appveyor UpdateBuild -Version "${APPVEYOR_VERSION}")
-    set(ENV{APPVEYOR_BUILD_VERSION} "${APPVEYOR_VERSION}")
-endif()
-
 if (NOT DEFINED PRODUCT_NAME)
     message(FATAL_ERROR "You haven't prepared CMakeProjectConfig.cmake file.
     See README.md/Developing for details.")

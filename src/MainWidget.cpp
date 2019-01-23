@@ -3,14 +3,12 @@
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonObject>
 #include <QtCore/QDir>
-#include <QtCore/QStringBuilder>
 
 #include "MainWidget.h"
 #include "ui_MainWidget.h"
 
 #include "Settings.h"
 #include "WindowEventsManager.h"
-#include "Autorun.h"
 
 
 MainWidget::MainWidget(QWidget *parent)
@@ -28,7 +26,7 @@ MainWidget::MainWidget(QWidget *parent)
 //    this->setPalette(palette);
 
     // set some defaults
-    setLoggedIn(false);
+    loggedIn = false;
 
     this->setMinimumSize(QSize(350, 500));
 //
@@ -49,10 +47,7 @@ MainWidget::MainWidget(QWidget *parent)
     restoreGeometry(settings.value(QStringLiteral("mainWindowGeometry")).toByteArray()); // from QWidget; restore saved window position
 
     taskbar = new QTaskbarControl(this);
-
-#ifdef Q_OS_LINUX
-    taskbar->setAttribute(QTaskbarControl::LinuxDesktopFile, settings.value(DESKTOP_FILE_PATH));
-#endif
+    taskbar->setAttribute(QTaskbarControl::LinuxDesktopFile, QDir::homePath() + "/.config/autostart/TimeCamp Desktop.desktop");
 }
 
 MainWidget::~MainWidget()
@@ -66,7 +61,7 @@ void MainWidget::init()
     this->setupWebview(); // starts the embedded webpage
     MainWidgetWasInitialised = true;
     this->wasTheWindowLeftOpened();
-    this->triggerTimerStatusFetchAsync();
+    this->refreshTimerStatus();
 }
 
 void MainWidget::handleSpacingEvents()
@@ -116,11 +111,16 @@ void MainWidget::webpageDataUpdateOnInterval()
     if (loggedIn) {
         emit checkIsIdle(); // this shouldn't really be here; check idle or not only when user is logged in
         if(this->isActiveWindow()) { // only when we're in the window, clicking
+//            checkIsTimerRunning();
+            refreshTimerStatus();
             fetchRecentTasks();
         }
-        getCurrentWebTimerStatusEmitted();
+        QString apiKeyStr = settings.value(SETT_APIKEY).toString().trimmed();
+        if (apiKeyStr.isEmpty() || apiKeyStr == QLatin1String("false")) {
+            fetchAPIkey();
+        }
     } else {
-        checkAPIkey();
+        setApiKey(QStringLiteral(""));
     }
 }
 
@@ -129,9 +129,9 @@ void MainWidget::setupWebview()
     QTWEView = new TCWebEngineView(this);
     QTWEView->setAcceptDrops(false);
 //    QTWEView->setAttribute(Qt::WA_TranslucentBackground);
-    QObject::connect(QTWEView, &QWebEngineView::loadStarted, this, &MainWidget::handleLoadStarted);
-    QObject::connect(QTWEView, &QWebEngineView::loadProgress, this, &MainWidget::handleLoadProgress);
-    QObject::connect(QTWEView, &QWebEngineView::loadFinished, this, &MainWidget::handleLoadFinished);
+    connect(QTWEView, &QWebEngineView::loadStarted, this, &MainWidget::handleLoadStarted);
+    connect(QTWEView, &QWebEngineView::loadProgress, this, &MainWidget::handleLoadProgress);
+    connect(QTWEView, &QWebEngineView::loadFinished, this, &MainWidget::handleLoadFinished);
 
 
     QTWEProfile = new QWebEngineProfile(APPLICATION_NAME, QTWEView); // set "profile" as appName
@@ -147,20 +147,24 @@ void MainWidget::setupWebview()
     QTWEPage = new QWebEnginePage(QTWEProfile, QTWEView);
 //    QTWEPage->setBackgroundColor(Qt::transparent);
     QTWEView->setPage(QTWEPage);
-    QObject::connect(QTWEProfile, &QWebEngineProfile::downloadRequested, this, &MainWidget::downloadRequested);
+    connect(QTWEProfile, &QWebEngineProfile::downloadRequested, this, &MainWidget::downloadRequested);
 
     refreshBind = new QShortcut(QKeySequence::Refresh, this);
     refreshBind->setContext(Qt::ApplicationShortcut);
-    QObject::connect(refreshBind, &QShortcut::activated, this, &MainWidget::webviewRefresh);
+    connect(refreshBind, &QShortcut::activated, this, &MainWidget::webviewRefresh);
 
     fullscreenBind = new QShortcut(QKeySequence::FullScreen, this);
     fullscreenBind->setContext(Qt::ApplicationShortcut);
-    QObject::connect(fullscreenBind, &QShortcut::activated, this, &MainWidget::webviewFullscreen);
+    connect(fullscreenBind, &QShortcut::activated, this, &MainWidget::webviewFullscreen);
 
-    QObject::connect(QTWEPage, &QWebEnginePage::titleChanged, this, &MainWidget::webpageTitleChanged);
+//    pagePointer = m_pWebEngineView->page();
 
-    checkAPIkey(); // try to fetch api key once on the start
     this->goToTimerPage(); // loads main app url
+//    QTWEPage->load(QUrl(APPLICATION_URL));
+//    QTWEPage->load(QUrl("http://request.urih.com/"));
+
+
+    connect(QTWEPage, &QWebEnginePage::titleChanged, this, &MainWidget::webpageTitleChanged);
 }
 
 void MainWidget::handleLoadStarted()
@@ -188,11 +192,6 @@ void MainWidget::handleLoadFinished(bool ok)
     QGuiApplication::restoreOverrideCursor(); // pop from the cursor stack
 //    qDebug() << "cursor: load finished " << ok;
     taskbar->setProgressVisible(false);
-    if (!loggedIn) {
-        // javascript magic: hide the "news" on login page
-        this->runJSinPage(QStringLiteral(
-                              "jQuery('#about .news').parent().parent().attr('class', 'hidden').siblings().first().attr('class', 'col-xs-12 col-sm-10 col-sm-push-1 col-md-8 col-md-push-2 col-lg-6 col-lg-push-3')"));
-    }
 }
 
 void MainWidget::wasTheWindowLeftOpened()
@@ -202,19 +201,21 @@ void MainWidget::wasTheWindowLeftOpened()
     }
 }
 
-void MainWidget::webpageTitleChanged(const QString title)
+void MainWidget::webpageTitleChanged(QString title)
 {
 //    qInfo("[NEW_TC]: Webpage title changed: ");
 //    qInfo(title.toLatin1().constData());
     checkIfLoggedIn(title);
     if (!loggedIn) {
-        setApiKey(QStringLiteral(""));
+        // javascript magic: hide the "news" on login page
+        this->runJSinPage(QStringLiteral("jQuery('#about .news').parent().parent().attr('class', 'hidden').siblings().first().attr('class', 'col-xs-12 col-sm-10 col-sm-push-1 col-md-8 col-md-push-2 col-lg-6 col-lg-push-3')"));
         LastTasks.clear(); // clear last tasks
         LastTasksCache = QJsonDocument(); // clear the cache
         emit lastTasksChanged();
     }
+    emit pageStatusChanged(loggedIn, title);
     this->setWindowTitle(title); // https://trello.com/c/J8dCKeV2/43-niech-tytul-apki-desktopowej-sie-zmienia-
-    emit pageTitleChanged(title);
+//    this->checkIsTimerRunning();
 }
 
 void MainWidget::clearCache()
@@ -242,10 +243,12 @@ void MainWidget::webviewFullscreen()
     this->setUpdatesEnabled(true);
 }
 
-void MainWidget::checkIfLoggedIn(const QString title)
+void MainWidget::checkIfLoggedIn(QString title)
 {
-    if (title.toLower().contains(QRegExp("log in|login|register|create free account|create account|time tracking software|blog"))) {
-        setLoggedIn(false); // when we log out, we need to set this variable again
+    if (!title.toLower().contains(QRegExp("log in|login|register|create free account|create account|time tracking software|blog"))) {
+        loggedIn = true;
+    } else {
+        loggedIn = false; // when we log out, we need to set this variable again
     }
 }
 
@@ -264,13 +267,13 @@ void MainWidget::open()
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 256); // force waiting before we quit this func; and process some events
 }
 
-void MainWidget::runJSinPage(const QString js)
+void MainWidget::runJSinPage(QString js)
 {
-//    qDebug() << "Running JS: " << js; // too verbose
+    qDebug() << "Running JS: " << js;
     QTWEPage->runJavaScript(js);
 }
 
-void MainWidget::forceLoadUrl(const QString url)
+void MainWidget::forceLoadUrl(QString url)
 {
     this->runJSinPage("window.location='" + url + "'");
 }
@@ -292,7 +295,7 @@ void MainWidget::goToTimerPage()
         {
             qDebug() << "Load progress: " << newValue;
             if (newValue == 100) {
-//                QThread::msleep(128);
+                QThread::msleep(128);
                 loop.quit();
             }
         });
@@ -305,12 +308,12 @@ void MainWidget::goToTimerPage()
         QObject::disconnect(conn1);
         QObject::disconnect(conn2);
         QObject::disconnect(conn3);
-//        QThread::msleep(128);
+        QThread::msleep(128);
 
+        this->webpageTitleChanged(QTWEPage->title());
     } else {
         this->refreshTimerPageData();
     }
-    this->webpageTitleChanged(QTWEPage->title());
 }
 
 void MainWidget::goToAwayPage()
@@ -335,29 +338,57 @@ void MainWidget::showTaskPicker()
 
 void MainWidget::refreshTimerPageData()
 {
-    this->runJSinPage(QStringLiteral("if(typeof(angular) !== 'undefined'){"
+    this->runJSinPage("if(typeof(angular) !== 'undefined'){"
                       "angular.element(document.body).injector().get('TTEntriesService').reload();"
                       "angular.element(document.body).injector().get('UserLogService').reload();"
-                      "}"));
-    this->triggerTimerStatusFetchAsync();
+                      "}");
+    this->refreshTimerStatus();
 }
 
-void MainWidget::triggerTimerStatusFetchAsync()
+void MainWidget::refreshTimerStatus()
 {
-    qDebug() << "[JS] Timer STATUS fetch";
-    this->runJSinPage(QStringLiteral("typeof(angular) !== 'undefined' && typeof(angular.element(document.body).injector()) !== 'undefined' && angular.element(document.body).injector().get('TimerService').status();"));
+    this->runJSinPage(QStringLiteral("typeof(angular) !== 'undefined' && angular.element(document.body).injector().get('TimerService').status();"));
+    this->checkIsTimerRunning();
 }
 
-void MainWidget::getCurrentWebTimerStatusEmitted()
+void MainWidget::shouldRefreshTimerStatus(bool isRunning, QString name)
 {
-    QTWEPage->runJavaScript(QStringLiteral("typeof(angular) !== 'undefined' && typeof(angular.element(document.body).injector()) !== 'undefined' && JSON.stringify(angular.element(document.body).injector().get('TimerService').timer)"),
+    if (!this->isActiveWindow()) { // only when we're in the window, clicking
+        return;
+    }
+
+    QString timerTempStr = QStringLiteral("angular.element(document.body).injector().get('TimerService').timer");
+
+    QString jsToRun = "typeof(angular) !== 'undefined' &&  typeof("+timerTempStr+".isTimerRunning) !== 'undefined' "
+                      " && "+timerTempStr+".isTimerRunning == " + QString::number(isRunning);
+
+    if(!name.isEmpty()) {
+        // if we have a timer name, make sure it's the same in the web AND in cpp
+        jsToRun += " && ( typeof("+timerTempStr+".name) !== 'undefined' && "+timerTempStr+".name == '" + name + "')";
+    } else {
+        // if we don't have timer name, make sure it's either undefined OR "same" (empty = "", spaces, etc)
+        jsToRun += " && ( typeof("+timerTempStr+".name) === 'undefined' || "+timerTempStr+".name == '" + name + "')";
+    }
+
+    qDebug() << "Running JS2: " << jsToRun;
+
+    QTWEPage->runJavaScript(jsToRun,
+                            [this, isRunning, name](const QVariant &v)
+                            {
+                                if(v.isValid() && !v.toBool()) { // when the above statement IS NOT TRUE (i.e. we have no angular or isTimerRunning is a different flag
+                                    this->refreshTimerStatus();
+                                }
+                            });
+}
+
+void MainWidget::checkIsTimerRunning()
+{
+    QTWEPage->runJavaScript(QStringLiteral("typeof(angular) !== 'undefined' && JSON.stringify(angular.element(document.body).injector().get('TimerService').timer)"),
         [this](const QVariant &v)
     {
-        if(!v.isValid() || !v.toBool()) { // when the above statement is invalid, OR returns false
-            qWarning() << "Timer Status Refresh - failed";
+        if(!v.isValid()) {
             return;
         }
-//        qDebug() << "[JS] Timer STATUS Update"; // too verbose
         emit updateTimerStatus(v.toByteArray());
     });
 }
@@ -368,6 +399,7 @@ void MainWidget::fetchRecentTasks()
     {
 //        LastTasks.clear(); // don't need to clear a QHash
 
+//        qDebug() << v.toString();
         if (!v.isValid()) {
             return;
         }
@@ -386,40 +418,25 @@ void MainWidget::fetchRecentTasks()
     });
 }
 
-void MainWidget::checkAPIkey()
-{
-    QString apiKeyStr = settings.value(SETT_APIKEY).toString().trimmed();
-    if (apiKeyStr.isEmpty() || apiKeyStr == QLatin1String("false")) {
-        fetchAPIkey();
-    }
-}
-
 void MainWidget::fetchAPIkey()
 {
-    auto *apiPageView = new TCWebEngineView(this);
-    auto *apiPage = new QWebEnginePage(QTWEProfile, apiPageView);
-    apiPageView->setPage(apiPage);
-    apiPage->load(QUrl(APIKEY_URL));
+//    QTWEPage->runJavaScript("await window.apiService.getToken()",
+    QTWEPage->runJavaScript(QStringLiteral("typeof(window.apiService) !== 'undefined' && window.apiService.getToken().$$state.value"), [this](const QVariant &v)
+    {
+//        qDebug() << "API Key: " << v.toString();
 
-    QObject::connect(apiPageView, &QWebEngineView::loadFinished, [=](bool loadOk) {
-        if (!loadOk) {
-            qWarning() << "Couldn't fetch API key";
-            return;
+        if(v.isValid() && v.toBool()) { // http://doc.qt.io/qt-5/qvariant.html#toBool
+            // is true for many types when non-zero; and (quote):
+
+            // "[returns true] if the variant has type QString or QByteArray
+            // and its lower-case content is not one of the following:
+            // empty, "0" or "false"; otherwise returns false"
+
+            setApiKey(v.toString());
         }
-
-        qInfo() << "Fetched API key";
-
-        apiPageView->page()->toPlainText([=](const QString &pageText) {
-            if (pageText.contains(QLatin1String("no_session"))) {
-                setLoggedIn(false);
-            } else {
-                setLoggedIn(true);
-                setApiKey(pageText); // not no_session - then it's an API KEY
-                webpageTitleChanged(QStringLiteral(""));
-            }
-            apiPageView->deleteLater(); // after we finished using the temporary view, we can put it into Qt's "GC" delete queue
-        });
     });
+    // no problem if it fails, since it runs in a loop "webpageDataUpdateOnInterval"
+    // and that handles failed states (empty or "false" api key)
 }
 
 
@@ -464,7 +481,7 @@ void MainWidget::downloadRequested(QWebEngineDownloadItem* download) {
                 download->accept();
                 QObject::connect(download, &QWebEngineDownloadItem::downloadProgress, this, &MainWidget::setDownloadProgress);
                 QObject::connect(download, &QWebEngineDownloadItem::finished, this, &MainWidget::downloadFinished);
-                // no need to call QObject::disconnect() - "The connection will automatically disconnect if the sender or the context is destroyed." - DOCS
+                // no need to call disconnect() - "The connection will automatically disconnect if the sender or the context is destroyed." - DOCS
                 // sender (here) - the 'download'
                 break;
             case QMessageBox::No:
@@ -490,10 +507,4 @@ void MainWidget::downloadFinished() {
 
     taskbar->setProgress(1);
     taskbar->setProgressVisible(false);
-}
-
-void MainWidget::setLoggedIn(bool loggedIn) {
-    MainWidget::loggedIn = loggedIn;
-    qInfo() << "Logged in: " << loggedIn;
-    emit pageStatusChanged(loggedIn);
 }

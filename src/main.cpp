@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
     QObject::connect(&mainWidget, &MainWidget::checkIsIdle, windowEventsManager->getCaptureEventsThread(), &WindowEvents::checkIdleStatus);
 
     // sync DB on page change
-    QObject::connect(&mainWidget, &MainWidget::pageStatusChanged, [&syncDBtimer](bool loggedIn)
+    QObject::connect(&mainWidget, &MainWidget::pageStatusChanged, [&syncDBtimer](bool loggedIn, QString title)
     {
         if (!loggedIn) {
             if(syncDBtimer->isActive()) {
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
 
     // the timer that syncs via API
     auto *TimeCampTimer = new TCTimer(comms);
-//    QObject::connect(syncDBtimer, &QTimer::timeout, comms, &Comms::timerStatus); // checking Timer Status on the same interval as DB Sync
+    QObject::connect(syncDBtimer, &QTimer::timeout, comms, &Comms::timerStatus); // checking Timer Status on the same interval as DB Sync
 
     // Hotkeys
     auto hotkeyNewTimer = new QHotkey(QKeySequence(KB_SHORTCUTS_START_TIMER), true, &app);
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
 
     auto hotkeyStopTimer = new QHotkey(QKeySequence(KB_SHORTCUTS_STOP_TIMER), true, &app);
     QObject::connect(hotkeyStopTimer, &QHotkey::activated, TimeCampTimer, &TCTimer::stopTimerSlot);
-//    QObject::connect(hotkeyStopTimer, &QHotkey::activated, &mainWidget, &MainWidget::triggerTimerStatusFetchAsync);
+    QObject::connect(hotkeyStopTimer, &QHotkey::activated, &mainWidget, &MainWidget::refreshTimerStatus);
 
     auto hotkeyOpenWindow = new QHotkey(QKeySequence(KB_SHORTCUTS_OPEN_WINDOW), true, &app);
     QObject::connect(hotkeyOpenWindow, &QHotkey::activated, trayManager, &TrayManager::openCloseWindowAction);
@@ -208,19 +208,16 @@ int main(int argc, char *argv[])
 
     // Timer stop
     QObject::connect(theWidget, &FloatingWidget::pauseButtonClicked, TimeCampTimer, &TCTimer::stopTimerSlot);
-//    QObject::connect(theWidget, &FloatingWidget::pauseButtonClicked, &mainWidget, &MainWidget::triggerTimerStatusFetchAsync);
+    QObject::connect(theWidget, &FloatingWidget::pauseButtonClicked, &mainWidget, &MainWidget::refreshTimerStatus);
 
     QObject::connect(trayManager, &TrayManager::stopTaskClicked, TimeCampTimer, &TCTimer::stopTimerSlot);
-//    QObject::connect(trayManager, &TrayManager::stopTaskClicked, &mainWidget, &MainWidget::triggerTimerStatusFetchAsync);
+    QObject::connect(trayManager, &TrayManager::stopTaskClicked, &mainWidget, &MainWidget::refreshTimerStatus);
 
     // Timer listeners
     QObject::connect(TimeCampTimer, &TCTimer::timerStatusChanged, trayManager, &TrayManager::updateStopMenu);
     QObject::connect(TimeCampTimer, &TCTimer::timerStatusChanged, theWidget, &FloatingWidget::updateWidgetStatus);
-
+    QObject::connect(TimeCampTimer, &TCTimer::timerStatusChanged, &mainWidget, &MainWidget::shouldRefreshTimerStatus);
     QObject::connect(TimeCampTimer, &TCTimer::timerElapsedSeconds, theWidget, &FloatingWidget::setTimerElapsed);
-
-    QObject::connect(TimeCampTimer, &TCTimer::askForWebTimerUpdate, &mainWidget, &MainWidget::triggerTimerStatusFetchAsync);
-    QObject::connect(syncDBtimer, &QTimer::timeout, &mainWidget, &MainWidget::triggerTimerStatusFetchAsync);
 
     QObject::connect(&mainWidget, &MainWidget::updateTimerStatus, TimeCampTimer, &TCTimer::timerStatusReply);
 

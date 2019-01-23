@@ -12,18 +12,12 @@ TCTimer::TCTimer(Comms *comms)
 
 void TCTimer::decideTimerReply(QNetworkReply *reply, QByteArray buffer)
 {
-    // we used to parse all API responses here
-//    QString stringUrl = reply->url().toString();
-//    if (stringUrl.contains(QLatin1String("/timer"))) {
-//        // TODO: this needs some better checks
-//        timerStatusReply(std::move(buffer));
-//    }
-
-    // now: we got a response for START or STOP to API
-    // let's ask web browser to refresh it's status
-    // and a callback will call timerStatusReply
-    qDebug() << "We got some response for API - START or STOP, use WEB to check STATUS";
-    emit askForWebTimerUpdate();
+    // this reply can be caught and forwarded from the built-in WebBrowser and we can still parse it here
+    QString stringUrl = reply->url().toString();
+    if (stringUrl.contains(QLatin1String("/timer"))) {
+        // TODO: this needs some better checks
+        timerStatusReply(std::move(buffer));
+    }
 }
 
 void TCTimer::timerStatusReply(QByteArray buffer)
@@ -55,6 +49,7 @@ void TCTimer::timerStatusReply(QByteArray buffer)
     // clear elapsed, task, etc - when timer wasn't running
     if (!isRunning) {
         clearData();
+        emit timerStatusChanged(isRunning, name);
     }
 
     // then set / update everything with data from response
@@ -75,13 +70,12 @@ void TCTimer::timerStatusReply(QByteArray buffer)
     QJsonValue newTimerIdVal = rootObject.value(QStringLiteral("new_timer_id"));
     if(newTimerIdVal.isDouble()) {
         timer_id = newTimerIdVal.toInt(); // set internal timer_id
-        elapsed = 0; // we started new timer, but got info about old timers elapsed time... weird API
+        elapsed = 1; // we started new timer, but got info about old timers elapsed time... weird API
     }
 
-    if (isRunning) {
-        onTimerStartRoutine(nullptr, elapsed+1); // this will restart counting from 0, get names, etc
+    if (task_id != 0) {
+        onTimerStartRoutine(nullptr, elapsed); // this will restart counting from 0, get names, etc
     }
-    emit timerStatusChanged(isRunning, name);
 }
 
 void TCTimer::clearData()
@@ -100,7 +94,7 @@ void TCTimer::mergedStartTimerSlots(qint64 taskID)
 {
     task_id = taskID;
     comms->timerStart(task_id);
-    onTimerStartRoutine(nullptr, 1); // "start timer" with 1 sec to show any time
+    onTimerStartRoutine(nullptr, 1);
 }
 
 void TCTimer::startTaskByTaskObj(Task *task, bool force)
@@ -149,7 +143,8 @@ void TCTimer::onTimerStartRoutine(Task* taskObj, qint64 fromStartElapsed)
         name = taskObj->getName(); // set TimerName to TaskName
     }
 
-    emit timerStatusChanged(isRunning, name);
-    emit timerElapsedSeconds(fromStartElapsed);
+    if (task_id == 0 || 0 != QString::compare(previousName, name)) {
+        emit timerStatusChanged(isRunning, name);
+        emit timerElapsedSeconds(fromStartElapsed);
+    }
 }
-

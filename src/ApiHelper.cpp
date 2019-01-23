@@ -6,6 +6,11 @@ ApiHelper::ApiHelper(const QString &baseUrl)
     : baseUrl(baseUrl)
 {}
 
+void ApiHelper::setApiKey(const QString &apiKey)
+{
+    ApiHelper::apiKey = apiKey;
+}
+
 bool ApiHelper::updateApiKeyFromSettings()
 {
     apiKey = settings.value(SETT_APIKEY).toString().trimmed();
@@ -21,18 +26,18 @@ QUrlQuery ApiHelper::getDefaultApiParams()
 {
     QUrlQuery params = QUrlQuery();
     params.addQueryItem(QStringLiteral("api_token"), apiKey);
-    params.addQueryItem(QStringLiteral("service"), QStringLiteral(SETT_API_SERVICE_FIELD));
-    params.addQueryItem(QStringLiteral("app_version"), QStringLiteral(APPLICATION_VERSION));
+    params.addQueryItem(QStringLiteral("service"), SETT_API_SERVICE_FIELD);
+    params.addQueryItem(QStringLiteral("app_version"), APPLICATION_VERSION);
     params.addQueryItem(QStringLiteral("operating_system"), QSysInfo::prettyProductName());
 
     return params;
 }
 
-QUrl ApiHelper::getApiUrl(const QString endpoint, const QString format)
+QUrl ApiHelper::getApiUrl(QString endpoint, QString format)
 {
-    QString URL = baseUrl + endpoint + QStringLiteral("/api_token/") + apiKey;
+    QString URL = baseUrl + endpoint + "/api_token/" + apiKey;
     if (!format.isEmpty()) {
-        URL += QStringLiteral("/format/") + format;
+        URL += "/format/" + format;
     }
     return QUrl(URL);
 }
@@ -47,9 +52,9 @@ QUrl ApiHelper::userInfoUrl()
     return this->getApiUrl(ApiEndpoint::USER, ApiFormat::JSON);
 }
 
-QUrl ApiHelper::groupSettingsUrl(const QString groupId)
+QUrl ApiHelper::groupSettingsUrl(QString groupId)
 {
-    return this->getApiUrl(QString(ApiEndpoint::GROUP) + QStringLiteral("/") + groupId + QStringLiteral("/setting"), ApiFormat::JSON);
+    return this->getApiUrl(QString(ApiEndpoint::GROUP) + QStringLiteral("/") + groupId + "/setting", ApiFormat::JSON);
 }
 
 QUrl ApiHelper::tasksUrl()

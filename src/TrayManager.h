@@ -42,8 +42,7 @@ public:
 
     void updateWidget(bool);
     void updateStopMenu(bool, QString);
-    void loginLogout(bool);
-    void updateTooltip(QString tooltipText);
+    void loginLogout(bool, QString);
 
     bool wasLoggedIn = false;
     QMenu *getTrayMenu() const;

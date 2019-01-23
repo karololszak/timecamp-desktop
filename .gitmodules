@@ -16,4 +16,4 @@
 
 [submodule "third-party/vendor/de/skycoder42/qautostart"]
 	path = third-party/vendor/de/skycoder42/qautostart
-	url = https://github.com/karololszacki/QAutoStart
+	url = https://github.com/Skycoder42/QAutoStart
