@@ -7,7 +7,7 @@ branches:
 
 install:
   - set QTDIR=C:\Qt\5.9\msvc2017_64
-  - set PATH=%QTDIR%\bin;%PATH%;
+  - set PATH=%QTDIR%\bin;%PATH%;"
 
 init:
   - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
@@ -29,7 +29,6 @@ after_build:
   - windeployqt --release --no-translations Release\TimeCampDesktop.exe
   - copy C:\OpenSSL-Win64\bin\libeay32.dll "Release\libeay32.dll"
   - copy C:\OpenSSL-Win64\bin\ssleay32.dll "Release\ssleay32.dll"
-  - copy "%QTDIR%\bin\qtdiag.exe" "Release\qtdiag.exe"
 
 artifacts:
   - path: Release
