@@ -12,7 +12,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include(QtCommon) # cmake/QtCommon.cmake
 
 include(CMakeProjectConfig.cmake)
-set(PRODUCT_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_REVISION}.${VERSION_BUILD})
 project(TimeCampDesktop VERSION ${PRODUCT_VERSION})
 
 if (NOT DEFINED PRODUCT_NAME)
@@ -22,12 +21,6 @@ endif ()
 
 # Set PROJECT_VERSION_PATCH and PROJECT_VERSION_TWEAK to 0 if not present, needed by add_project_meta
 fix_project_version()
-
-configure_file (
-    "src/Versions.h.in"
-    "${PROJECT_BINARY_DIR}/Versions.h"
-)
-include_directories("${PROJECT_BINARY_DIR}")
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -76,7 +69,6 @@ endif()
 
 list(APPEND SOURCE_FILES
         "src/Settings.h" # a header without cpp file
-        "src/Versions.h"
         "src/main.cpp"
         "src/DbManager.cpp"
         "src/MainWidget.cpp"
@@ -84,7 +76,7 @@ list(APPEND SOURCE_FILES
         "src/Overrides/TCNavigationInterceptor.cpp"
         "src/Overrides/TCWebEngineView.cpp"
         "src/Overrides/ClickableLabel.cpp"
-        "src/ApiHelper.cpp"
+    "src/ApiHelper.cpp"
         "src/Comms.cpp"
         "src/AppData.cpp"
         "src/Task.cpp"
