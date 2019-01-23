@@ -105,6 +105,6 @@ void TCTimer::stopTimerSlot()
 void TCTimer::startIfNotRunningYet()
 {
     if (!isRunning) {
-        comms->timerStart();
+        this->start();
     }
 }
