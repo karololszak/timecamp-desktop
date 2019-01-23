@@ -8,7 +8,7 @@ void Autorun::enableAutorun()
 #ifdef Q_OS_LINUX
     QString execPath = getenv("APPIMAGE");
     if (execPath.isEmpty()) {
-        execPath = "/usr/share/TimeCamp SA/TimeCamp Desktop";
+        execPath = "/usr/share/Time Solutions/TimeCamp Desktop";
     }
 
     QString desktopFile = ""
@@ -20,7 +20,7 @@ void Autorun::enableAutorun()
             "Exec=\""
             + execPath +
             "\"\n"
-            "Icon=\"/usr/share/TimeCamp SA/icon.png\"\n"
+            "Icon=\"/usr/share/Time Solutions/icon.png\"\n"
             "StartupNotify=false\n"
             "Terminal=false\n"
             "Categories=Office;ProjectManagement;Monitor;Network;\n"
