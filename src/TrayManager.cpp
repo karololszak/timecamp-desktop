@@ -270,19 +270,22 @@ void TrayManager::assignActions(QMenu *menu) {
 }
 
 bool TrayManager::areMenusEqual(QMenu *menu1, QMenu *menu2) {
+//    return menu1->actions() == menu2->actions();
     if (menu1->actions().length() != menu2->actions().length()) {
-        return false; // different lengths
+        return false;
     }
     for (int i = 0; i < menu1->actions().length(); i++) {
-        if (QString::compare(menu1->actions()[i]->text(), menu2->actions()[i]->text()) != 0) {
-            return false; // strings are not equal
-        }
-        if (menu1->actions()[i]->isCheckable() == menu2->actions()[i]->isCheckable()
-            && menu1->actions()[i]->isChecked() != menu2->actions()[i]->isChecked()) {
-            return false; // it's a checkbox, but has different state
+        if (QString::compare(menu1->actions()[i]->text(), menu2->actions()[i]->text()) == 0) {
+            if (menu1->actions()[i]->isCheckable() == menu2->actions()[i]->isCheckable()) {
+                if (menu1->actions()[i]->isChecked() != menu2->actions()[i]->isChecked()) {
+                    return false;
+                }
+            }
+        } else {
+            return false;
         }
     }
-    return true; // we checked everything and never failed, so they're equal
+    return true;
 }
 
 void TrayManager::updateWidget(bool loggedIn) {
