@@ -7,7 +7,6 @@
 #define ORGANIZATION_DOMAIN "TimeCamp.com"
 
 #define WINDOW_NAME "TimeCamp"
-#define MARKETING_URL "https://www.timecamp.com/"
 #define LOGIN_URL "https://www.timecamp.com/auth/login"
 #define APIKEY_URL "https://www.timecamp.com/auth/token"
 #define API_URL "https://desktop.timecamp.com/third_party/api"
