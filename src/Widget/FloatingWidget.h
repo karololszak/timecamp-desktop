@@ -76,10 +76,6 @@ private:
     int textHeight;
     int startStopWidth;
     int timerTextWidth;
-
-    QPixmap playPixmap;
-    QPixmap pausePixmap;
-    bool timerRunning = false;
 };
 
 #endif //TIMECAMPDESKTOP_FLOATINGWIDGET_H
