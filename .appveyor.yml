@@ -46,5 +46,5 @@ deploy:
   artifact: Release.zip
   draft: false
   prerelease: true
-  on:
-    APPVEYOR_REPO_TAG: false
+    on:
+      APPVEYOR_REPO_TAG: false
