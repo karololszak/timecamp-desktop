@@ -306,10 +306,11 @@ bool TrayManager::areMenusEqual(QMenu *menu1, QMenu *menu2) {
 
 void TrayManager::updateWidget(bool loggedIn) {
 #ifdef _WIDGET_EXISTS_
-    widgetAct->setEnabled(loggedIn);
-    if (!loggedIn) {
+    if (!loggedIn && widget != nullptr) {
         widget->hideMe();
     }
+    widgetAct->setChecked(loggedIn);
+    widgetAct->setEnabled(loggedIn);
     this->widgetToggl(widgetAct->isChecked());
 #endif
 }
@@ -319,6 +320,7 @@ void TrayManager::updateTooltip(QString tooltipText) {
     trayIcon->setToolTip(tooltipText); // we don't use trayIcon on macOS
 #endif
 }
+
 void TrayManager::loginLogout(bool isLoggedIn) {
 //    qDebug() << "[Browser] Page changed; update whether logged in or not";
 

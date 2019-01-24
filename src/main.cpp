@@ -227,6 +227,7 @@ int main(int argc, char *argv[])
     QObject::connect(&mainWidget, &MainWidget::updateTimerStatus, TimeCampTimer, &TCTimer::timerStatusReply);
 
     trayManager->setWidget(theWidget);
+    trayManager->updateWidget(false); // hide widget by default
     trayManager->setupSettings();
     comms->timedUpdates(); // fetch userInfo, userSettings, send apps since last update
     mainWidget.init(); // init the WebView
