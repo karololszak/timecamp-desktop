@@ -244,9 +244,9 @@ void MainWidget::webviewFullscreen()
 
 bool MainWidget::checkIfOnLoginPage()
 {
-    QRegularExpression regex("log in|login|register|create free account|create account|time tracking software|blog");
+    QRegularExpression regex("log in|login|register|create free account|create account|time tracking software|blog|google");
 
-    return (QTWEPage->title().isEmpty() || QTWEPage->title().toLower().contains(regex));
+    return (QTWEPage->title().isEmpty() || QTWEPage->title().toLower().contains(regex) || QTWEPage->url().toString().toLower().contains(regex));
 }
 
 void MainWidget::open()
